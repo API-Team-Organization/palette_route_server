@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: palette
+  data:
+    redis:
+      port: 8379
+      host: r2dbc:mysql://${DB_URL}
+      password: ${REDIS_PASSWORD}
+
+  session:
+    store-type: redis
+    redis:
+      flush-mode: immediate
+
+  r2dbc:
+    url: r2dbc:mariadb://${DB_URL}:8306/palette
+    username: ${MARIA_USERNAME}
+    password: ${MARIA_PASSWORD}
