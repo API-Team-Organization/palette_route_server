@@ -4,7 +4,7 @@ spring:
   data:
     redis:
       port: 8379
-      host: r2dbc:mysql://${DB_URL}
+      host: ${DB_URL}
       password: ${REDIS_PASSWORD}
 
   session:
