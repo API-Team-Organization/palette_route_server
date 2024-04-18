@@ -39,7 +39,8 @@ dependencies {
 
     implementation("jakarta.servlet:jakarta.servlet-api:6.1.0-M2")
 
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webflux-api:2.5.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0")
 }
 
 dependencyManagement {

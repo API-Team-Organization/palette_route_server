@@ -14,5 +14,3 @@ spring:
     url: r2dbc:mariadb://${DB_URL}:8306/palette
     username: ${MARIA_USERNAME}
     password: ${MARIA_PASSWORD}
-
-springdoc.swagger-ui.path: /swagger-ui.html
