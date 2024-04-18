@@ -36,7 +36,6 @@ class UserService(
             .switchIfEmpty { Mono.error(CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)) }
             .flatMap { user ->
                 if (passwordEncoder.matches(request.password, user.password)) {
-                    println("pw verify success")
                     factory.reactiveConnection
                         .serverCommands()
                         .flushAll()
