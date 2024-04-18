@@ -1,17 +1,18 @@
 package com.teamapi.palette.dto.auth
 
 import com.teamapi.palette.entity.User
-import java.util.Date
+import org.springframework.security.crypto.password.PasswordEncoder
+import java.time.LocalDate
 
 data class RegisterRequest(
     val username: String,
     val password: String,
-    val birthDate: Date,
+    val birthDate: LocalDate,
     val email: String,
 ) {
-    fun toEntity(): User = User(
+    fun toEntity(encoder: PasswordEncoder): User = User(
         email,
-        password,
+        encoder.encode(password),
         username,
         birthDate
     )

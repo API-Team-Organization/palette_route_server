@@ -2,6 +2,7 @@ package com.teamapi.palette.entity
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
+import java.time.LocalDate
 import java.util.Date
 
 data class User(
@@ -10,8 +11,8 @@ data class User(
     val username: String,
 
     @Column("birth_date")
-    val birthDate: Date,
+    val birthDate: LocalDate,
 
     @Id
-    val id: Long = -1L
+    val id: Long? = null
 )
