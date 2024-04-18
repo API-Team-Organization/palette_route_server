@@ -16,8 +16,7 @@ class RedisConfig {
     ) : ReactiveRedisOperations<String, String> {
         val serializer = StringRedisSerializer()
 
-        val builder: RedisSerializationContext.RedisSerializationContextBuilder<String, String> =
-            RedisSerializationContext.newSerializationContext(StringRedisSerializer())
+        val builder = RedisSerializationContext.newSerializationContext<String, String>(StringRedisSerializer())
 
         val context: RedisSerializationContext<String, String> = builder.value(serializer).build()
 
