@@ -37,6 +37,8 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.springframework.security:spring-security-test")
 
+    implementation("jakarta.servlet:jakarta.servlet-api:6.1.0-M2")
+
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
 }
 
