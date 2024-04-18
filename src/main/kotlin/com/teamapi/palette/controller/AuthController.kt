@@ -22,10 +22,7 @@ class AuthController(
         .thenReturn(Response.ok("회원가입 성공"))
 
     @PostMapping("/login")
-    fun login(
-        @RequestBody request: Mono<LoginRequest>
-    ) = request.flatMap { userService.login(it) }
-        .map {
-            ResponseBody.ok("로그인 성공", it)
-        }
+    fun login(@RequestBody request: Mono<LoginRequest>) = request
+        .flatMap { userService.login(it) }
+        .map { ResponseBody.ok("로그인 성공", it) }
 }

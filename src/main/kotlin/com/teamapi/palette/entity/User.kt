@@ -3,7 +3,6 @@ package com.teamapi.palette.entity
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
 import java.time.LocalDate
-import java.util.Date
 
 data class User(
     val email: String,
