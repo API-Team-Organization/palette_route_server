@@ -2,6 +2,8 @@ package com.teamapi.palette.service
 
 import com.teamapi.palette.dto.auth.RegisterRequest
 import com.teamapi.palette.repository.UserRepository
+import com.teamapi.palette.response.GlobalResponseCode
+import com.teamapi.palette.response.exception.CustomException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
@@ -17,7 +19,7 @@ class UserService(
     fun register(request: RegisterRequest): Mono<Void> {
         return userRepository.existsByEmail(request.email)
             .flatMap {
-                if (it) Mono.error(Exception("user already exists"))
+                if (it) Mono.error(CustomException(GlobalResponseCode.USER_ALREADY_EXISTS))
                 else userRepository.save(request.toEntity(passwordEncoder)).then()
             }
     }
