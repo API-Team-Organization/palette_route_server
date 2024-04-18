@@ -14,7 +14,7 @@ import reactor.kotlin.core.publisher.switchIfEmpty
 import java.util.UUID
 
 @Service
-class UserService(
+class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val factory: ReactiveRedisConnectionFactory,
@@ -33,7 +33,7 @@ class UserService(
     ): Mono<String> {
         val uuid = UUID.randomUUID()
         return userRepository.findByEmail(request.email)
-            .switchIfEmpty { Mono.error(CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)) }
+            .switchIfEmpty { Mono.error(CustomException(ErrorCode.USER_NOT_FOUND)) }
             .flatMap { user ->
                 if (passwordEncoder.matches(request.password, user.password)) {
                     factory.reactiveConnection
@@ -45,9 +45,7 @@ class UserService(
                                 .add(uuid.toString(), user.id.toString())
                                 .flatMap { Mono.just(uuid.toString()) }
                         )
-                } else {
-                    Mono.error(CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION))
-                }
+                } else Mono.error(CustomException(ErrorCode.INVALID_PASSWORD))
             }
     }
 }
