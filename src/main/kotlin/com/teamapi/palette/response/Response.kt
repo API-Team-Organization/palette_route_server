@@ -1,6 +1,7 @@
 package com.teamapi.palette.response
 
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatusCode
 import org.springframework.http.ResponseEntity
 
 open class Response(
@@ -8,7 +9,7 @@ open class Response(
     open val message: String,
 ) {
     companion object {
-        fun of(code: HttpStatus, message: String): ResponseEntity<Response>
+        fun of(code: HttpStatusCode, message: String): ResponseEntity<Response>
             = ResponseEntity.status(code).body(Response(code.value(), message))
         fun ok(message: String) = of(HttpStatus.OK, message)
         fun created(message: String) = of(HttpStatus.CREATED, message)
