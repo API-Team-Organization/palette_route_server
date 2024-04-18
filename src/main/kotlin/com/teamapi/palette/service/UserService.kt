@@ -36,13 +36,14 @@ class UserService(
             .switchIfEmpty { Mono.error(CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)) }
             .flatMap { user ->
                 if (passwordEncoder.matches(request.password, user.password)) {
+                    println("pw verify success")
                     factory.reactiveConnection
                         .serverCommands()
                         .flushAll()
                         .then(
                             redisOperations
                                 .opsForSet()
-                                .add(uuid.toString())
+                                .add(uuid.toString(), user.id.toString())
                                 .flatMap { Mono.just(uuid.toString()) }
                         )
                 } else {
