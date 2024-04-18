@@ -3,7 +3,7 @@ package com.teamapi.palette.service
 import com.teamapi.palette.dto.auth.LoginRequest
 import com.teamapi.palette.dto.auth.RegisterRequest
 import com.teamapi.palette.repository.UserRepository
-import com.teamapi.palette.response.GlobalResponseCode
+import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
 import org.springframework.data.redis.core.ReactiveRedisOperations
@@ -23,7 +23,7 @@ class UserService(
     fun register(request: RegisterRequest): Mono<Void> {
         return userRepository.existsByEmail(request.email)
             .flatMap {
-                if (it) Mono.error(CustomException(GlobalResponseCode.USER_ALREADY_EXISTS))
+                if (it) Mono.error(CustomException(ErrorCode.USER_ALREADY_EXISTS))
                 else userRepository.save(request.toEntity(passwordEncoder)).then()
             }
     }
@@ -33,7 +33,7 @@ class UserService(
     ): Mono<String> {
         val uuid = UUID.randomUUID()
         return userRepository.findByEmail(request.email)
-            .switchIfEmpty { Mono.error(CustomException(GlobalResponseCode.INTERNAL_SERVER_EXCEPTION)) }
+            .switchIfEmpty { Mono.error(CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)) }
             .flatMap { user ->
                 if (passwordEncoder.matches(request.password, user.password)) {
                     factory.reactiveConnection
@@ -46,7 +46,7 @@ class UserService(
                                 .flatMap { Mono.just(uuid.toString()) }
                         )
                 } else {
-                    Mono.error(CustomException(GlobalResponseCode.INTERNAL_SERVER_EXCEPTION))
+                    Mono.error(CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION))
                 }
             }
     }

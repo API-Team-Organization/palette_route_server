@@ -2,7 +2,7 @@ package com.teamapi.palette.response
 
 import org.springframework.http.HttpStatus
 
-enum class GlobalResponseCode(
+enum class ErrorCode(
     override val statusCode: HttpStatus,
     override val message: String
 ) : ResponseCode {
