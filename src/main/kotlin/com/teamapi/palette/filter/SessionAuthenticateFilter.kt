@@ -2,47 +2,43 @@ package com.teamapi.palette.filter
 
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
-import org.springframework.data.redis.core.ReactiveRedisOperations
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.core.Ordered
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilter
 import org.springframework.web.server.WebFilterChain
-import reactor.core.publisher.Flux
+import org.springframework.web.server.WebSession
+import org.springframework.web.util.pattern.PathPatternParser
 import reactor.core.publisher.Mono
+import reactor.util.context.Context
 
 @Component
-class SessionAuthenticateFilter(
-    private val factory: ReactiveRedisConnectionFactory,
-    private val sessionOps: ReactiveRedisOperations<String, String>,
-    private val userDetailsService: UserDetailsService
-) : WebFilter {
+class SessionAuthenticateFilter : WebFilter, Ordered {
+    // TODO: Automatically sync with ant filter
+    private val allowedPath = arrayListOf(
+        PathPatternParser.defaultInstance.parse("/auth/**")
+    )
+
     override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
-        val session = exchange.request.cookies.getValue("_session")
-
-        val sessionUUID = session.firstOrNull()
-
-        if (sessionUUID != null) {
-            return factory
-                .reactiveConnection
-                .serverCommands()
-                .flushAll()
-                .thenMany(
-                    sessionOps.keys(sessionUUID.value)
-                        .flatMap { sessionOps.opsForValue().get(it) }
-                )
-                .switchIfEmpty { Flux.error<Void>(CustomException(ErrorCode.USER_NOT_FOUND)) } // TODO: fix not be handled
-                .map {
-                    val user = userDetailsService.loadUserByUsername(it)
-                    SecurityContextHolder.getContext().authentication = UsernamePasswordAuthenticationToken(user, it, listOf())
+        if (allowedPath.any { it.matches(exchange.request.path.pathWithinApplication()) }) {
+            return exchange.session.flatMap { session ->
+                chain
+                    .filter(exchange)
+                    .contextWrite(Context.of(WebSession::class.java, session))
+            }
+        } // else
+        return exchange.session
+            .doOnNext {
+                it.getAttribute<Long>("user") ?: throw CustomException(ErrorCode.INVALID_SESSION)
+            }
+            .then(
+                exchange.session.flatMap { session ->
+                    chain
+                        .filter(exchange)
+                        .contextWrite(Context.of(WebSession::class.java, session))
                 }
-                .then(
-                    chain.filter(exchange)
-                )
-        }
-        return chain.filter(exchange)
+            )
     }
+
+    override fun getOrder(): Int = 0
 }

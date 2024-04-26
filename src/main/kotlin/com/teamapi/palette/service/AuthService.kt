@@ -5,20 +5,16 @@ import com.teamapi.palette.dto.auth.RegisterRequest
 import com.teamapi.palette.repository.UserRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
-import org.springframework.data.redis.core.ReactiveRedisOperations
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
-import java.util.UUID
 
 @Service
 class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val factory: ReactiveRedisConnectionFactory,
-    private val redisOperations: ReactiveRedisOperations<String, String>
+    private val sessionHolder: SessionHolder
 ) {
     fun register(request: RegisterRequest): Mono<Void> {
         return userRepository.existsByEmail(request.email)
@@ -29,23 +25,19 @@ class AuthService(
     }
 
     fun login(
-        request: LoginRequest
-    ): Mono<String> {
-        val uuid = UUID.randomUUID()
+        request: LoginRequest,
+    ): Mono<Void> {
         return userRepository.findByEmail(request.email)
             .switchIfEmpty { Mono.error(CustomException(ErrorCode.USER_NOT_FOUND)) }
-            .flatMap { user ->
-                if (passwordEncoder.matches(request.password, user.password)) {
-                    factory.reactiveConnection
-                        .serverCommands()
-                        .flushAll()
-                        .then(
-                            redisOperations
-                                .opsForSet()
-                                .add(uuid.toString(), user.id.toString())
-                                .flatMap { Mono.just(uuid.toString()) }
-                        )
-                } else Mono.error(CustomException(ErrorCode.INVALID_PASSWORD))
+            .filter { passwordEncoder.matches(request.password, it.password) }
+            .switchIfEmpty { Mono.error(CustomException(ErrorCode.INVALID_PASSWORD)) }
+            .flatMap {
+                sessionHolder.current()
+                    .flatMap { session ->
+                        session.attributes["user"] = it.id
+                        session.save()
+                    }
             }
+            .then()
     }
 }

@@ -7,7 +7,6 @@ spring:
       host: ${DB_URL}
       password: ${REDIS_PASSWORD}
   session:
-    store-type: redis
     redis:
       flush-mode: immediate
   r2dbc:

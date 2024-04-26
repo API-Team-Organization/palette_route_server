@@ -3,18 +3,17 @@ package com.teamapi.palette.controller
 import com.teamapi.palette.dto.auth.LoginRequest
 import com.teamapi.palette.dto.auth.RegisterRequest
 import com.teamapi.palette.response.Response
-import com.teamapi.palette.response.ResponseBody
 import com.teamapi.palette.service.AuthService
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.WebSession
 import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/auth")
 class AuthController(
-    val authService: AuthService
+    private val authService: AuthService
 ) {
     @PostMapping("/register")
     fun register(@RequestBody request: Mono<RegisterRequest>) = request
@@ -24,5 +23,14 @@ class AuthController(
     @PostMapping("/login")
     fun login(@RequestBody request: Mono<LoginRequest>) = request
         .flatMap { authService.login(it) }
-        .map { ResponseBody.ok("로그인 성공", it) }
+        .thenReturn(
+            ResponseEntity
+                .status(HttpStatus.OK)
+                .body(Response(200, "로그인 성공"))
+        )
+
+    @PostMapping("/logout")
+    fun logout(webSession: WebSession) = webSession
+        .invalidate()
+        .thenReturn(Response.ok("로그아웃 성공"))
 }

@@ -32,7 +32,6 @@ class SecurityConfig {
             .httpBasic { it.disable() }
             .csrf { it.disable() }
             .cors { it.configurationSource(corsConfigurationSource()) }
-//            .addFilterBefore()
             .build()
     }
 
