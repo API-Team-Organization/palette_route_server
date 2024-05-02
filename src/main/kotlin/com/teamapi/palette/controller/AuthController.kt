@@ -33,4 +33,9 @@ class AuthController(
     fun passwordUpdate(@RequestBody request: PasswordUpdateRequest) = authService
         .passwordUpdate(request)
         .thenReturn(Response.ok("비밀번호 변경 성공"))
+
+    @DeleteMapping("/resign")
+    fun resign(webSession: WebSession) = authService
+        .resign(webSession)
+        .thenReturn(Response.ok("유저 삭제 성공"))
 }

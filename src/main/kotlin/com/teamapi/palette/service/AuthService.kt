@@ -8,6 +8,7 @@ import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.web.server.WebSession
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
 
@@ -59,6 +60,16 @@ class AuthService(
                     it.copy(password = passwordEncoder.encode(request.afterPassword))
                 )
             }
+            .then()
+    }
+
+    fun resign(webSession: WebSession): Mono<Void> {
+        return sessionHolder
+            .me()
+            .flatMap { userRepository.findById(it) }
+            .switchIfEmpty { Mono.error(CustomException(ErrorCode.USER_NOT_FOUND)) }
+            .flatMap { userRepository.delete(it) }
+            .flatMap { webSession.invalidate() }
             .then()
     }
 }

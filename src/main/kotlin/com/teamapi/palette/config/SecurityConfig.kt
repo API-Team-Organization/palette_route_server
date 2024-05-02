@@ -27,7 +27,8 @@ class SecurityConfig {
         return http
             .authorizeExchange {
                 it
-                    .pathMatchers("/auth/**").permitAll()
+                    .pathMatchers("/auth/login").permitAll()
+                    .pathMatchers("/auth/register").permitAll()
                     .anyExchange().authenticated()
             }
             .formLogin { it.disable() }
