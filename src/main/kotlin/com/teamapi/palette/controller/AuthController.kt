@@ -2,6 +2,7 @@ package com.teamapi.palette.controller
 
 import com.teamapi.palette.dto.auth.LoginRequest
 import com.teamapi.palette.dto.auth.RegisterRequest
+import com.teamapi.palette.dto.user.PasswordUpdateRequest
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.service.AuthService
 import org.springframework.web.bind.annotation.*
@@ -27,4 +28,9 @@ class AuthController(
     fun logout(webSession: WebSession) = webSession
         .invalidate()
         .thenReturn(Response.ok("로그아웃 성공"))
+
+    @PatchMapping("/password")
+    fun passwordUpdate(@RequestBody request: PasswordUpdateRequest) = authService
+        .passwordUpdate(request)
+        .thenReturn(Response.ok("비밀번호 변경 성공"))
 }

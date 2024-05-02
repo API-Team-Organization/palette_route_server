@@ -2,6 +2,7 @@ package com.teamapi.palette.service
 
 import com.teamapi.palette.dto.auth.LoginRequest
 import com.teamapi.palette.dto.auth.RegisterRequest
+import com.teamapi.palette.dto.user.PasswordUpdateRequest
 import com.teamapi.palette.repository.UserRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
@@ -37,6 +38,26 @@ class AuthService(
                         session.attributes["user"] = it.id
                         session.save()
                     }
+            }
+            .then()
+    }
+
+    fun passwordUpdate(request: PasswordUpdateRequest): Mono<Void> {
+        return sessionHolder
+            .me()
+            .flatMap {
+                userRepository.findById(it)
+            }
+            .filter {
+                passwordEncoder.matches(request.beforePassword, it.password)
+            }
+            .switchIfEmpty {
+                Mono.error(CustomException(ErrorCode.INVALID_PASSWORD))
+            }
+            .flatMap {
+                userRepository.save(
+                    it.copy(password = passwordEncoder.encode(request.afterPassword))
+                )
             }
             .then()
     }
