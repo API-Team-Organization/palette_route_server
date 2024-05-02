@@ -21,12 +21,14 @@ class SecurityConfig {
         return BCryptPasswordEncoder()
     }
 
-    @Order(Ordered.HIGHEST_PRECEDENCE)
     @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE + 3)
     fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
         return http
             .authorizeExchange {
-                it.anyExchange().permitAll()
+                it
+                    .pathMatchers("/auth/**").permitAll()
+                    .anyExchange().authenticated()
             }
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
