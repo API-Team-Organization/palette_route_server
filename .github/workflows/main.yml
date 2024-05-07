@@ -23,9 +23,8 @@ jobs:
 
       - name: Create application.yml
         run: |
-          ls -l
-          touch ./palette_route_server/src/main/resources/application.yml
-          echo "{{ secrets.APPLICATION_YML }}" > ./palette_route_server/src/main/resources/application.yml
+          touch ./src/main/resources/application.yml
+          echo "{{ secrets.APPLICATION_YML }}" > ./src/main/resources/application.yml
 
       - name: Build with Gradle
         run: |
@@ -34,5 +33,4 @@ jobs:
 
       - name: Add to Docker
         run: |
-          cd palette_route_server
           docker run -d -p 8080:8080 --rm -it $(docker build --file Dockerfile -t palette_route -q .)
