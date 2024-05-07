@@ -1,0 +1,39 @@
+name: GitHub CI with Gradle
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout to develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Create application.yml
+        run: |
+          touch ./src/main/resources/application.yml
+          echo "{{ secrets.APPLICATION_YML }}" > ./src/main/resources/application.yml
+
+      - name: Build with Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew build
+
+      - name: Add to Docker
+        run: |
+          sudo docker container rm route -f
+          docker rmi palette_route -f
+          sudo docker build --file Dockerfile -t palette_route .
+          sudo docker run -d -p 8080:8080 --name route palette_route 
