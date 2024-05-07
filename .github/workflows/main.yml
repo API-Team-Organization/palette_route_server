@@ -23,7 +23,7 @@ jobs:
 
       - name: Create application.yml
         run: |
-          pwd
+          ls -l
           touch ./palette_route_server/src/main/resources/application.yml
           echo "{{ secrets.APPLICATION_YML }}" > ./palette_route_server/src/main/resources/application.yml
 
