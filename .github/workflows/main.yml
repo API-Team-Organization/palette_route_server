@@ -27,7 +27,6 @@ jobs:
           echo "{{ secrets.APPLICATION_YML }}" > ./palette_route_server/src/main/resources/application.yml
 
       - name: Build with Gradle
-        uses: gradle/gradle-build-action@v3
         run: |
           chmod +x gradlew
           ./gradlew build
