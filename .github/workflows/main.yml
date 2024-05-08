@@ -34,6 +34,7 @@ jobs:
       - name: Add to Docker
         run: |
           whoami
+          docker
           sudo docker container rm route -f
           sudo docker rmi palette_route -f
           sudo docker build --file Dockerfile -t palette_route .
