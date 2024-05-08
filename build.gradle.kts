@@ -39,6 +39,7 @@ dependencies {
 
     implementation("jakarta.servlet:jakarta.servlet-api:6.1.0-M2")
 
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.springdoc:springdoc-openapi-starter-webflux-api:2.5.0")
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0")
 }
