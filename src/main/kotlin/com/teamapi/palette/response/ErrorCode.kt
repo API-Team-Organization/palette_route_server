@@ -15,7 +15,7 @@ enum class ErrorCode(
     INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "잘못된 파라미터"),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "허용되지 않은 요청 메소드"),
     MEDIA_TYPE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "허용되지 않은 미디어 자료형"),
-
+    BAD_REQUEST(HttpStatus.BAD_REQUEST, "올바르지 않은 요청")
     ;
 
     override fun getName() = name
