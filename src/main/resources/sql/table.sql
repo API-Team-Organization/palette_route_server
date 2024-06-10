@@ -1,9 +1,9 @@
 CREATE TABLE user (
-    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(255) NOT NULL,
-    username VARCHAR(255) NOT NULL,
-    birth_date DATE NOT NULL,
-    password VARCHAR(255) NOT NULL
+    id          BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    email       VARCHAR(255) NOT NULL,
+    username    VARCHAR(255) NOT NULL,
+    birth_date  DATE NOT NULL,
+    password    VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE room (
