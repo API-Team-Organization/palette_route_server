@@ -47,6 +47,7 @@ class SecurityConfig(private val objectMapper: ObjectMapper) {
             .authorizeExchange {
                 it
                     .pathMatchers("auth/login", "auth/register").permitAll()
+                    .pathMatchers("/webjars/v3/api-docs/**", "/webjars/swagger-ui/**").permitAll()
                     .anyExchange().authenticated()
             }
             .exceptionHandling {
