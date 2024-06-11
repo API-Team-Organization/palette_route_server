@@ -8,6 +8,7 @@ import com.teamapi.palette.response.exception.CustomException
 import org.springframework.core.Ordered
 import org.springframework.http.MediaType
 import org.springframework.http.server.reactive.ServerHttpResponse
+import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.resource.NoResourceFoundException
 import org.springframework.web.server.ServerWebExchange
@@ -27,6 +28,9 @@ class SessionExceptionFilter(
             }
             .onErrorResume(NoResourceFoundException::class.java) {
                 exchange.response.writeJson(ErrorCode.ENDPOINT_NOT_FOUND)
+            }
+            .onErrorResume(BadCredentialsException::class.java) {
+                exchange.response.writeJson(ErrorCode.INVALID_CREDENTIALS)
             }
             .onErrorResume(Exception::class.java) {
                 it.printStackTrace()

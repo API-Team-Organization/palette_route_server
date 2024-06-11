@@ -1,25 +1,45 @@
 package com.teamapi.palette.service
 
-import com.teamapi.palette.response.ErrorCode
-import com.teamapi.palette.response.exception.CustomException
+import com.teamapi.palette.entity.AuthUserInfo
+import org.springframework.security.core.context.ReactiveSecurityContextHolder
+import org.springframework.security.core.context.SecurityContext
+import org.springframework.security.core.context.SecurityContextImpl
+import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository.DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME
 import org.springframework.stereotype.Component
+import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebSession
 import reactor.core.publisher.Mono
-import reactor.kotlin.core.publisher.switchIfEmpty
 
 @Component
 class SessionHolder {
-    fun current(): Mono<WebSession> {
+    private fun getServerWebExchange(): Mono<ServerWebExchange> {
         return Mono.deferContextual {
-            Mono.just(it.get(WebSession::class.java))
+            Mono.just(it.get(ServerWebExchange::class.java))
         }
     }
 
-    fun me(): Mono<Long> {
-        return current()
-            .flatMap {
-                Mono.justOrEmpty(it.getAttribute<Long>("user"))
+    fun getWebSession(): Mono<WebSession> {
+        return getServerWebExchange()
+            .flatMap { exchange: ServerWebExchange -> exchange.session }
+    }
+
+    fun getSecurityContext(): Mono<SecurityContext> {
+        return getWebSession()
+            .flatMap { session: WebSession ->
+                ReactiveSecurityContextHolder.getContext()
+                    .switchIfEmpty(Mono.fromSupplier {
+                        SecurityContextImpl().also { session.attributes[DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME] = it }
+                    })
             }
-            .switchIfEmpty { Mono.error(CustomException(ErrorCode.INVALID_SESSION)) }
+    }
+
+    fun userInfo(): Mono<AuthUserInfo> {
+        return getSecurityContext()
+            .map { it.authentication.principal }
+            .cast(AuthUserInfo::class.java)
+    }
+
+    fun me(): Mono<Long> {
+        return userInfo().map { it.id }
     }
 }

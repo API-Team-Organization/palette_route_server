@@ -29,10 +29,15 @@ class AuthController(
         .invalidate()
         .thenReturn(Response.ok("로그아웃 성공"))
 
+    @GetMapping("/session")
+    fun updateCurrentSession(session: WebSession) = session
+        .changeSessionId()
+        .thenReturn(Response.ok("세션 갱신 성공"))
+
     @PatchMapping("/password")
     fun passwordUpdate(@RequestBody request: PasswordUpdateRequest) = authService
         .passwordUpdate(request)
-        .thenReturn(Response.ok("비밀번호 변경 성공"))
+        .thenReturn(Response.ok("비밀번호 변경 성공. 다시 로그인 해 주세요."))
 
     @DeleteMapping("/resign")
     fun resign(webSession: WebSession) = authService
