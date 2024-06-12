@@ -9,7 +9,7 @@ enum class ErrorCode(
     USER_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 같은 사용자가 존재함"),
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "해당 유저를 찾을 수 없음"),
     INVALID_SESSION(HttpStatus.UNAUTHORIZED, "잘못된 세션"),
-    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호가 틀림"),
+    INVALID_CREDENTIALS(HttpStatus.BAD_REQUEST, "잘못된 로그인 정보"),
     INTERNAL_SERVER_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "내부 서버 에러"),
     ENDPOINT_NOT_FOUND(HttpStatus.NOT_FOUND, "엔드포인트를 찾을 수 없음"),
     INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "잘못된 파라미터"),

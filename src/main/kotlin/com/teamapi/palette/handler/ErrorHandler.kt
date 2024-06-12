@@ -34,7 +34,7 @@ class ErrorHandler {
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
     private fun handleHttpRequestMethodNotSupportedException(e: HttpRequestMethodNotSupportedException) =
-        Response.of(ErrorCode.METHOD_NOT_ALLOWED.statusCode, ErrorCode.METHOD_NOT_ALLOWED.message)
+        Response.of(ErrorCode.METHOD_NOT_ALLOWED.statusCode, ErrorCode.METHOD_NOT_ALLOWED.message + " (${e.supportedHttpMethods?.joinToString(", ") ?: "No method supported."})")
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
     private fun handleHttpMediaTypeNotSupportedException(e: HttpMediaTypeNotSupportedException) =

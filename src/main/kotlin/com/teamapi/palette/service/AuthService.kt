@@ -6,17 +6,21 @@ import com.teamapi.palette.dto.user.PasswordUpdateRequest
 import com.teamapi.palette.repository.UserRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
+import com.teamapi.palette.util.findUser
+import org.springframework.security.authentication.ReactiveAuthenticationManager
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository.DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME
 import org.springframework.stereotype.Service
 import org.springframework.web.server.WebSession
 import reactor.core.publisher.Mono
-import reactor.kotlin.core.publisher.switchIfEmpty
 
 @Service
 class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val sessionHolder: SessionHolder
+    private val sessionHolder: SessionHolder,
+    private val authManager: ReactiveAuthenticationManager,
 ) {
     fun register(request: RegisterRequest): Mono<Void> {
         return userRepository.existsByEmail(request.email)
@@ -29,47 +33,40 @@ class AuthService(
     fun login(
         request: LoginRequest,
     ): Mono<Void> {
-        return userRepository.findByEmail(request.email)
-            .switchIfEmpty { Mono.error(CustomException(ErrorCode.USER_NOT_FOUND)) }
-            .filter { passwordEncoder.matches(request.password, it.password) }
-            .switchIfEmpty { Mono.error(CustomException(ErrorCode.INVALID_PASSWORD)) }
+        return authManager.authenticate(
+            UsernamePasswordAuthenticationToken(request.email, request.password)
+        )
+            .flatMap { auth ->
+                sessionHolder.getSecurityContext().map { it.apply { authentication = auth } }
+            } // context
             .flatMap {
-                sessionHolder.current()
-                    .flatMap { session ->
-                        session.attributes["user"] = it.id
-                        session.save()
-                    }
+                sessionHolder.getWebSession().flatMap { session ->
+                    session.attributes[DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME] = it
+                    session.changeSessionId()
+                }
             }
-            .then()
     }
 
     fun passwordUpdate(request: PasswordUpdateRequest): Mono<Void> {
-        return sessionHolder
-            .me()
+        return sessionHolder.userInfo()
             .flatMap {
-                userRepository.findById(it)
+                authManager.authenticate(UsernamePasswordAuthenticationToken(it.username, request.beforePassword))
             }
-            .filter {
-                passwordEncoder.matches(request.beforePassword, it.password)
-            }
-            .switchIfEmpty {
-                Mono.error(CustomException(ErrorCode.INVALID_PASSWORD))
-            }
+            .then(sessionHolder.me())
+            .findUser(userRepository)
             .flatMap {
-                userRepository.save(
-                    it.copy(password = passwordEncoder.encode(request.afterPassword))
-                )
+                userRepository.save(it.copy(password = passwordEncoder.encode(request.afterPassword)))
             }
+            .then(sessionHolder.getWebSession())
+            .flatMap { it.invalidate() }
             .then()
     }
 
     fun resign(webSession: WebSession): Mono<Void> {
         return sessionHolder
             .me()
-            .flatMap { userRepository.findById(it) }
-            .switchIfEmpty { Mono.error(CustomException(ErrorCode.USER_NOT_FOUND)) }
+            .findUser(userRepository)
             .flatMap { userRepository.delete(it) }
-            .flatMap { webSession.invalidate() }
-            .then()
+            .then(Mono.defer { webSession.invalidate() })
     }
 }
