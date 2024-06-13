@@ -19,6 +19,7 @@ CREATE TABLE chat (
     datetime    TIMESTAMP NOT NULL,
     room_id     BIGINT NOT NULL,
     user_id     BIGINT,
+    is_ai       BOOL NOT NULL,
     FOREIGN KEY (room_id) REFERENCES room(id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
