@@ -15,7 +15,7 @@ CREATE TABLE room (
 
 CREATE TABLE chat (
     id BIGINT   NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    message     VARCHAR(255) NOT NULL,
+    message     TEXT NOT NULL,
     datetime    TIMESTAMP NOT NULL,
     room_id     BIGINT NOT NULL,
     user_id     BIGINT,
