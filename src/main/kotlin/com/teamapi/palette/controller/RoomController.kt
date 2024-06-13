@@ -1,6 +1,7 @@
 package com.teamapi.palette.controller
 
 import com.azure.core.annotation.PathParam
+import com.teamapi.palette.dto.room.CreateRoomRequest
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
 import com.teamapi.palette.service.RoomService
@@ -13,7 +14,7 @@ class RoomController (
     private val roomService: RoomService
 ) {
     @PostMapping
-    fun createRoom() = roomService.createRoom()
+    fun createRoom(@RequestBody request: CreateRoomRequest) = roomService.createRoom(request)
         .thenReturn(Response.ok("룸 생성 성공"))
 
     @GetMapping("/list")
