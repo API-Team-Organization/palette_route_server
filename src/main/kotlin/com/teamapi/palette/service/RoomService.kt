@@ -17,6 +17,6 @@ class RoomService (
         return sessionHolder
             .me()
             .findUser(userRepository)
-            .flatMap { roomRepository.save(Room(user = it)).then() }
+            .flatMap { roomRepository.save(Room(userId = it.id!!)).then() }
     }
 }
