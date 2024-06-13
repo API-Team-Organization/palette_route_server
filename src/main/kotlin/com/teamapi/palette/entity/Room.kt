@@ -6,6 +6,7 @@ import org.springframework.data.relational.core.mapping.Column
 data class Room(
     @Id
     val id: Long? = null,
+    val title: String? = null,
     @Column("user_id")
     val userId: Long
 )
