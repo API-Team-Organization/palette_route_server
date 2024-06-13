@@ -1,13 +1,10 @@
 package com.teamapi.palette.controller
 
+import com.azure.core.annotation.PathParam
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
 import com.teamapi.palette.service.RoomService
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import reactor.core.publisher.Flux
 
 @RestController
@@ -22,4 +19,8 @@ class RoomController (
     @GetMapping("/list")
     fun getRoomList() = roomService.getRoomList()
         .map { ResponseBody.ok("룸 조회 성공", it) }
+
+    @DeleteMapping("/{roomId}")
+    fun deleteRoom(@PathVariable roomId: Long) = roomService.deleteRoom(roomId)
+        .thenReturn(Response.ok("룸 삭제 완료"))
 }
