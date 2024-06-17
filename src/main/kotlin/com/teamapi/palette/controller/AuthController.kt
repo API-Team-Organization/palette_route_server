@@ -32,9 +32,7 @@ class AuthController(
         .thenReturn(Response.ok("로그아웃 성공"))
 
     @GetMapping("/session")
-    fun updateCurrentSession() = sessionHolder.getWebSession()
-        .flatMap { it.changeSessionId() }
-        .thenReturn(Response.ok("세션 갱신 성공"))
+    fun updateCurrentSession() = Mono.just(Response.ok("세션 갱신 성공"))
 
     @PatchMapping("/password")
     fun passwordUpdate(@RequestBody request: PasswordUpdateRequest) = authService
