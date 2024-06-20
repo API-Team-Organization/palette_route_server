@@ -33,7 +33,7 @@ dependencies {
     implementation("org.springframework.session:spring-session-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
     implementation("org.springframework.ai:spring-ai-azure-openai-spring-boot-starter")
-    implementation("org.springframework.boot:spring-boot-starter-azure-storage-blob")
+    implementation("com.azure.spring:spring-cloud-azure-starter-storage-blob")
     runtimeOnly("org.mariadb:r2dbc-mariadb:1.1.3")
     runtimeOnly("org.mariadb.jdbc:mariadb-java-client")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
