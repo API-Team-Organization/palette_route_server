@@ -19,6 +19,7 @@ repositories {
 }
 
 extra["springCloudAzureVersion"] = "5.11.0"
+val springAiVersion by extra("1.0.0-M1")
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
@@ -31,6 +32,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework.session:spring-session-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
+    implementation("org.springframework.ai:spring-ai-azure-openai-spring-boot-starter")
     runtimeOnly("org.mariadb:r2dbc-mariadb:1.1.3")
     runtimeOnly("org.mariadb.jdbc:mariadb-java-client")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -47,6 +49,7 @@ dependencies {
 dependencyManagement {
     imports {
         mavenBom("com.azure.spring:spring-cloud-azure-dependencies:${property("springCloudAzureVersion")}")
+        mavenBom("org.springframework.ai:spring-ai-bom:$springAiVersion")
     }
 }
 
