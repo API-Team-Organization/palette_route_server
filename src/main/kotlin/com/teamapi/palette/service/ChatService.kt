@@ -8,6 +8,8 @@ import com.teamapi.palette.util.findUser
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Service
 class ChatService (
@@ -21,7 +23,7 @@ class ChatService (
             .findUser(userRepository)
             .flatMap { chatRepository.save(Chat(
                 message = request.message,
-                datetime = Instant.now(),
+                datetime = LocalDateTime.now(),
                 roomId = request.roomId,
                 userId = it.id!!,
                 isAi = false
