@@ -5,9 +5,11 @@ import com.teamapi.palette.entity.Chat
 import com.teamapi.palette.repository.ChatRepository
 import com.teamapi.palette.repository.UserRepository
 import com.teamapi.palette.util.findUser
+import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import java.time.Instant
 
+@Service
 class ChatService (
     private val chatRepository: ChatRepository,
     private val sessionHolder: SessionHolder,
