@@ -2,7 +2,10 @@ package com.teamapi.palette.controller
 
 import com.teamapi.palette.dto.chat.CreateChatRequest
 import com.teamapi.palette.response.Response
+import com.teamapi.palette.response.ResponseBody
 import com.teamapi.palette.service.ChatService
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -17,4 +20,11 @@ class ChatController (
     fun createChat(@RequestBody request: CreateChatRequest) = chatService
         .createChat(request)
         .thenReturn(Response.ok("채팅 생성 성공"))
+
+    @GetMapping("/{roomId}")
+    fun getChatList(@PathVariable("roomId") roomId: Long) = chatService
+        .getChatList(roomId)
+        .map {
+            ResponseBody.ok("채팅 조회 성공", it)
+        }
 }
