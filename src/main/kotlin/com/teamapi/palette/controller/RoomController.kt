@@ -1,12 +1,10 @@
 package com.teamapi.palette.controller
 
-import com.azure.core.annotation.PathParam
 import com.teamapi.palette.dto.room.CreateRoomRequest
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
 import com.teamapi.palette.service.RoomService
 import org.springframework.web.bind.annotation.*
-import reactor.core.publisher.Flux
 
 @RestController
 @RequestMapping("/room")
