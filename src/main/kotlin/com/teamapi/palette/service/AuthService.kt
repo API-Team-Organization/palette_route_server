@@ -36,6 +36,7 @@ class AuthService(
         return authManager.authenticate(
             UsernamePasswordAuthenticationToken(request.email, request.password)
         )
+            .switchIfEmpty(Mono.error(CustomException(ErrorCode.INVALID_CREDENTIALS)))
             .flatMap { auth ->
                 sessionHolder.getSecurityContext().map { it.apply { authentication = auth } }
             } // context
