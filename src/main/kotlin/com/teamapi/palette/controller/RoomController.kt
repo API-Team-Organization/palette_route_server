@@ -1,6 +1,5 @@
 package com.teamapi.palette.controller
 
-import com.teamapi.palette.dto.room.CreateRoomRequest
 import com.teamapi.palette.dto.room.UpdateRoomTitleRequest
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
@@ -13,7 +12,7 @@ class RoomController (
     private val roomService: RoomService
 ) {
     @PostMapping
-    fun createRoom(@RequestBody request: CreateRoomRequest) = roomService.createRoom(request)
+    fun createRoom() = roomService.createRoom()
         .thenReturn(Response.ok("룸 생성 성공"))
 
     @GetMapping("/list")

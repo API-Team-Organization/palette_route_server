@@ -1,6 +1,5 @@
 package com.teamapi.palette.service
 
-import com.teamapi.palette.dto.room.CreateRoomRequest
 import com.teamapi.palette.dto.room.RoomResponse
 import com.teamapi.palette.dto.room.UpdateRoomTitleRequest
 import com.teamapi.palette.entity.Room
@@ -19,7 +18,7 @@ class RoomService (
     private val userRepository: UserRepository,
     private val sessionHolder: SessionHolder
 ) {
-    fun createRoom(request: CreateRoomRequest): Mono<Void> {
+    fun createRoom(): Mono<Void> {
         return sessionHolder
             .me()
             .findUser(userRepository)
