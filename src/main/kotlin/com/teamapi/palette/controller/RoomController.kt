@@ -4,6 +4,7 @@ import com.teamapi.palette.dto.room.UpdateRoomTitleRequest
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
 import com.teamapi.palette.service.RoomService
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -21,7 +22,7 @@ class RoomController (
 
     @PatchMapping("/title")
     fun updateRoomTitle(
-        @RequestBody updateRoomTitleRequest: UpdateRoomTitleRequest
+        @Valid @RequestBody updateRoomTitleRequest: UpdateRoomTitleRequest
     ) = roomService
         .updateRoomTitle(updateRoomTitleRequest)
         .thenReturn(Response.ok("룸 업데이트 완료"))

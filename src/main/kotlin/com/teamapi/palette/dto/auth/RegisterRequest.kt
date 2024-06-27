@@ -1,13 +1,20 @@
 package com.teamapi.palette.dto.auth
 
 import com.teamapi.palette.entity.User
+import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.NotBlank
 import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.LocalDate
 
 data class RegisterRequest(
+    @field:NotBlank
     val username: String,
+    @field:NotBlank
     val password: String,
+    @field:NotBlank
     val birthDate: LocalDate,
+    @field:NotBlank
+    @field:Email
     val email: String,
 ) {
     fun toEntity(encoder: PasswordEncoder): User = User(
@@ -16,9 +23,4 @@ data class RegisterRequest(
         username,
         birthDate
     )
-
-    companion object {
-        fun fromEntity(dto: User): RegisterRequest =
-            RegisterRequest(dto.username, dto.password, dto.birthDate, dto.email)
-    }
 }

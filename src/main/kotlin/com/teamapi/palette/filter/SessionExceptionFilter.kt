@@ -15,6 +15,7 @@ import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilter
 import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Mono
+import java.net.URLDecoder
 
 @Component
 class SessionExceptionFilter(
@@ -24,10 +25,15 @@ class SessionExceptionFilter(
     override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
         return chain.filter(exchange)
             .onErrorResume(CustomException::class.java) {
-                exchange.response.writeJson(it.responseCode)
+                exchange.response.writeJson(it.responseCode, *it.formats)
             }
             .onErrorResume(NoResourceFoundException::class.java) {
-                exchange.response.writeJson(ErrorCode.ENDPOINT_NOT_FOUND)
+                val reason = it.reason!!
+                val f = reason.indexOfLast { it == ' ' }
+                exchange.response.writeJson(
+                    ErrorCode.ENDPOINT_NOT_FOUND,
+                    URLDecoder.decode(reason.substring(f + 1, reason.length - 1), charset("utf-8"))
+                )
             }
             .onErrorResume(BadCredentialsException::class.java) {
                 exchange.response.writeJson(ErrorCode.INVALID_CREDENTIALS)
@@ -38,7 +44,7 @@ class SessionExceptionFilter(
             }
     }
 
-    private fun ServerHttpResponse.writeJson(responseCode: ResponseCode): Mono<Void> {
+    private fun ServerHttpResponse.writeJson(responseCode: ResponseCode, vararg format: Any?): Mono<Void> {
         statusCode = responseCode.statusCode
         headers.contentType = MediaType.APPLICATION_JSON
 
@@ -48,7 +54,7 @@ class SessionExceptionFilter(
                     objectMapper.writeValueAsBytes(
                         Response(
                             responseCode.statusCode.value(),
-                            responseCode.message
+                            responseCode.message.format(*format)
                         )
                     )
                 )
