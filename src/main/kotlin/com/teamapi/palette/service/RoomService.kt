@@ -2,6 +2,7 @@ package com.teamapi.palette.service
 
 import com.teamapi.palette.dto.room.CreateRoomRequest
 import com.teamapi.palette.dto.room.RoomResponse
+import com.teamapi.palette.dto.room.UpdateRoomTitleRequest
 import com.teamapi.palette.entity.Room
 import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.repository.UserRepository
@@ -23,7 +24,7 @@ class RoomService (
             .me()
             .findUser(userRepository)
             .flatMap {
-                roomRepository.save(Room(userId = it.id!!, title = request.title)).then()
+                roomRepository.save(Room(userId = it.id!!)).then()
             }
     }
 
@@ -38,6 +39,26 @@ class RoomService (
                 RoomResponse(it.id!!, it.title ?: "")
             }
             .collectList()
+    }
+
+    fun updateRoomTitle(updateRoomTitleRequest: UpdateRoomTitleRequest): Mono<Void> {
+        return sessionHolder
+            .me()
+            .findUser(userRepository)
+            .flatMap { user ->
+                roomRepository
+                    .findById(updateRoomTitleRequest.id)
+                    .switchIfEmpty { Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)) }
+                    .flatMap { room ->
+                        if (user.id == room.userId) {
+                            roomRepository
+                                .save(room.copy(title = updateRoomTitleRequest.title))
+                        } else {
+                            Mono.error(CustomException(ErrorCode.FORBIDDEN))
+                        }
+                    }
+            }
+            .then()
     }
 
     fun deleteRoom(roomId: Long): Mono<Void> {
