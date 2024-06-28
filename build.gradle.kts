@@ -34,7 +34,6 @@ dependencies {
     implementation("org.springframework.ai:spring-ai-azure-openai-spring-boot-starter")
     implementation("com.azure.spring:spring-cloud-azure-starter-storage-blob")
     implementation("com.azure.spring:spring-cloud-azure-starter-storage")
-    implementation("io.github.robothy:sdwebui-java-sdk:1.2")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
     runtimeOnly("org.mariadb:r2dbc-mariadb:1.1.3")
