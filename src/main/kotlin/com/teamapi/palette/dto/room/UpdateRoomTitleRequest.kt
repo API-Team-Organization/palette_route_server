@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull
 
 data class UpdateRoomTitleRequest (
     @field:NotNull
-    @field:NotBlank
     val id: Long,
     @field:NotBlank
     val title: String

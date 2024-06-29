@@ -11,7 +11,6 @@ data class RegisterRequest(
     val username: String,
     @field:NotBlank
     val password: String,
-    @field:NotBlank
     val birthDate: LocalDate,
     @field:NotBlank
     @field:Email
