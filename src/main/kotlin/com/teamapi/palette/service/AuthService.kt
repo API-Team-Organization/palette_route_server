@@ -1,9 +1,13 @@
 package com.teamapi.palette.service
 
-import com.teamapi.palette.dto.auth.LoginRequest
 import com.teamapi.palette.dto.auth.RegisterRequest
 import com.teamapi.palette.dto.user.PasswordUpdateRequest
+import com.teamapi.palette.entity.User
+import com.teamapi.palette.entity.VerifyCode
+import com.teamapi.palette.entity.consts.UserState
+import com.teamapi.palette.extern.MailVerifyProvider
 import com.teamapi.palette.repository.UserRepository
+import com.teamapi.palette.repository.VerifyCodeRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.util.findUser
@@ -14,10 +18,14 @@ import org.springframework.security.web.server.context.WebSessionServerSecurityC
 import org.springframework.stereotype.Service
 import org.springframework.web.server.WebSession
 import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
+import kotlin.jvm.optionals.getOrNull
 
 @Service
 class AuthService(
     private val userRepository: UserRepository,
+    private val verifyCodeRepository: VerifyCodeRepository,
+    private val mailVerifyProvider: MailVerifyProvider,
     private val passwordEncoder: PasswordEncoder,
     private val sessionHolder: SessionHolder,
     private val authManager: ReactiveAuthenticationManager,
@@ -26,15 +34,30 @@ class AuthService(
         return userRepository.existsByEmail(request.email)
             .flatMap {
                 if (it) Mono.error(CustomException(ErrorCode.USER_ALREADY_EXISTS))
-                else userRepository.save(request.toEntity(passwordEncoder)).then()
+                else userRepository.save(request.toEntity(passwordEncoder))
+            }
+            .flatMap {
+                createVerifyCode(it)
+                    .thenReturn(it)
+            }
+            .flatMap {
+                authenticate(it.email, request.password)
             }
     }
 
-    fun login(
-        request: LoginRequest,
+    @Suppress("BlockingMethodInNonBlockingContext")
+    private fun createVerifyCode(user: User): Mono<Void> {
+        val verifyCode = mailVerifyProvider.createVerifyCode()
+        return mailVerifyProvider.sendEmail(user.email, verifyCode)
+            .then(Mono.just(verifyCodeRepository.save(VerifyCode(user.id!!, verifyCode))))
+            .then()
+    }
+
+    fun authenticate(
+        email: String, password: String,
     ): Mono<Void> {
         return authManager.authenticate(
-            UsernamePasswordAuthenticationToken(request.email, request.password)
+            UsernamePasswordAuthenticationToken(email, password)
         )
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.INVALID_CREDENTIALS)))
             .flatMap { auth ->
@@ -69,5 +92,41 @@ class AuthService(
             .findUser(userRepository)
             .flatMap { userRepository.delete(it) }
             .then(Mono.defer { webSession.invalidate() })
+    }
+
+    fun verifyEmail(code: String): Mono<Void> {
+        return sessionHolder.me()
+            .publishOn(Schedulers.boundedElastic())
+            .mapNotNull { verifyCodeRepository.findById(it).getOrNull() }
+            .flatMap { Mono.justOrEmpty(it) }
+            .switchIfEmpty(Mono.error(CustomException(ErrorCode.ALREADY_VERIFIED)))
+            .filter { it.code == code }
+            .switchIfEmpty(Mono.error(CustomException(ErrorCode.INVALID_VERIFY_CODE)))
+
+            .flatMap { item ->
+                userRepository.findById(item.userId)
+                    .map { it.copy(state = UserState.ACTIVE) }
+                    .flatMap { userRepository.save(it) }
+                    .publishOn(Schedulers.boundedElastic())
+
+                    .map { verifyCodeRepository.delete(item) }
+                    .then()
+            }
+    }
+
+    fun resendVerifyCode(): Mono<Void> {
+        return sessionHolder.me()
+            .findUser(userRepository)
+            .filter { it.state == UserState.CREATED }
+            .switchIfEmpty(Mono.error(CustomException(ErrorCode.ALREADY_VERIFIED)))
+            .publishOn(Schedulers.boundedElastic())
+
+            .map {
+                verifyCodeRepository.deleteById(it.id!!) // if exists
+                it
+            }
+            .flatMap { createVerifyCode(it) }
+
+            .then()
     }
 }

@@ -11,6 +11,9 @@ enum class ErrorCode(
     INVALID_SESSION(HttpStatus.UNAUTHORIZED, "잘못된 세션"),
     INVALID_CREDENTIALS(HttpStatus.BAD_REQUEST, "잘못된 로그인 정보"),
     INTERNAL_SERVER_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "내부 서버 에러"),
+    MAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "메일 전송 실패"),
+    INVALID_VERIFY_CODE(HttpStatus.BAD_REQUEST, "잘못된 인증코드"),
+    ALREADY_VERIFIED(HttpStatus.FORBIDDEN, "이미 인증 된 유저"),
 
     ENDPOINT_NOT_FOUND(HttpStatus.NOT_FOUND, "엔드포인트 '/%s'를 찾을 수 없음"),
     ISSUE_ON_REQUEST_BODY(HttpStatus.BAD_REQUEST, "요청 바디에서 문제 발견: %s"),
