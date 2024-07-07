@@ -1,5 +1,6 @@
 package com.teamapi.palette.controller
 
+import com.teamapi.palette.dto.auth.EmailVerifyRequest
 import com.teamapi.palette.dto.auth.LoginRequest
 import com.teamapi.palette.dto.auth.RegisterRequest
 import com.teamapi.palette.dto.user.PasswordUpdateRequest
@@ -24,8 +25,20 @@ class AuthController(
 
     @PostMapping("/login")
     fun login(@RequestBody @Valid request: Mono<LoginRequest>) = request
-        .flatMap { authService.login(it) }
+        .flatMap { authService.authenticate(it.email, it.password) }
         .thenReturn(Response.ok("로그인 성공"))
+
+    @PostMapping("/resend")
+    fun resendCode() = authService
+        .resendVerifyCode()
+        .thenReturn(Response.ok("이메일 코드 재전송 성공"))
+
+    @PostMapping("/verify")
+    fun verify(@RequestBody @Valid request: Mono<EmailVerifyRequest>) = request
+        .flatMap {
+            authService.verifyEmail(it.code)
+        }
+        .thenReturn(Response.ok("이메일 인증 성공"))
 
     @PostMapping("/logout")
     fun logout() = sessionHolder.getWebSession()

@@ -35,6 +35,7 @@ dependencies {
     implementation("com.azure.spring:spring-cloud-azure-starter-storage-blob")
     implementation("com.azure.spring:spring-cloud-azure-starter-storage")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-mail")
 
     runtimeOnly("org.mariadb:r2dbc-mariadb:1.1.3")
     runtimeOnly("org.mariadb.jdbc:mariadb-java-client")
