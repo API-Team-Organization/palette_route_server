@@ -21,10 +21,12 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Create application.yml
+      - name: Create secured configurations
         run: |
           touch ./src/main/resources/application.yml
+          touch ./src/main/resources/palette.p12
           echo "${{ secrets.APPLICATION_YML }}" > ./src/main/resources/application.yml
+          echo "${{ secrets.PALETTE_P12 }}" > ./src/main/resources/palette.p12
 
       - name: Build with Gradle
         run: |
