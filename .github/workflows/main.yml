@@ -24,9 +24,10 @@ jobs:
       - name: Create secured configurations
         run: |
           touch ./src/main/resources/application.yml
-          touch ./src/main/resources/palette.p12
           echo "${{ secrets.APPLICATION_YML }}" > ./src/main/resources/application.yml
-          echo "${{ secrets.PALETTE_P12 }}" > ./src/main/resources/palette.p12
+          
+          touch ./src/main/resources/palette.p12
+          echo "${{ secrets.PALETTE_P12 }}" | base64 --decode > ./src/main/resources/palette.p12
 
       - name: Build with Gradle
         run: |
