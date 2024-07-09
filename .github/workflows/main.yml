@@ -1,6 +1,6 @@
 name: GitHub CI with Gradle
 
-on: [push]
+on: [ push ]
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout to develop
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: ${{ github.ref }}
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -34,9 +34,18 @@ jobs:
           chmod +x gradlew
           ./gradlew build
 
+  publish:
+    if: ${{ always() && contains(join(needs.*.result, ','), 'success') && github.ref == 'refs/heads/main' }}
+    needs: [build]
+    runs-on: self-hosted
+
+    permissions:
+      contents: read
+
+    steps:
       - name: Add to Docker
         run: |
           docker container rm route -f
           docker rmi palette_route -f
           docker build --file Dockerfile -t palette_route .
-          docker run -d -p 8080:8080 --name route palette_route 
+          docker run -d -p 8080:8080 --name route palette_route
