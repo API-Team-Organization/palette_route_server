@@ -32,21 +32,23 @@ class ChatService(
     private val mapper: ObjectMapper
 ) {
     fun createChat(request: CreateChatRequest): Mono<ChatUpdateResponse> {
-        return sessionHolder.me().findUser(userRepository).flatMap {
-            chatRepository.save(
-                Chat(
-                    message = request.message,
-                    datetime = LocalDateTime.now(),
-                    roomId = request.roomId,
-                    userId = it.id!!,
-                    isAi = false
-                )
+        return createUserReturn(request.message).onErrorStop().flatMapMany {
+            Flux.zip(
+                Mono.just(it),
+                draw(request.message),
+//                Mono.empty<Mono<ImageGenerations>>(),
+                sessionHolder.me()
             )
-        }.then(Flux.zip(
-            createUserReturn(request.message), draw(request.message), sessionHolder.me()
-        ).flatMap {
+        }.flatMap {
             chatRepository.saveAll(
                 listOf(
+                    Chat(
+                        message = request.message,
+                        datetime = LocalDateTime.now(),
+                        roomId = request.roomId,
+                        userId = it.t3,
+                        isAi = false
+                    ),
                     Chat(
                         message = it.t2.data[0].url,
                         datetime = LocalDateTime.now(),
@@ -54,7 +56,8 @@ class ChatService(
                         roomId = request.roomId,
                         userId = it.t3,
                         isAi = true
-                    ), Chat(
+                    ),
+                    Chat(
                         message = it.t1.choices[0].message.content,
                         datetime = LocalDateTime.now(),
                         roomId = request.roomId,
@@ -63,11 +66,11 @@ class ChatService(
                     )
                 )
             )
-        }.map { res ->
+        }.filter { it.isAi }.map { res ->
             ChatResponse(
                 res.id!!, res.message, res.datetime, res.roomId, res.userId, res.isAi, res.resource
             )
-        }.collectList().map { ChatUpdateResponse(it) })
+        }.collectList().map { ChatUpdateResponse(it) }
     }
 
     fun getChatList(roomId: Long): Mono<List<ChatResponse>> {
@@ -90,6 +93,7 @@ class ChatService(
 
     // TODO: Apply Comfy, Prompt enhancing - in next semester
     fun draw(query: String) = azure.getImageGenerations("Dalle3", ImageGenerationOptions(query))
+        .handleAzureError()
 //        webui.txt2Img(
 //        Txt2ImageOptions(
 //            samplerName = SamplingMethod.EULER_A,
@@ -107,7 +111,7 @@ class ChatService(
         ChatCompletionsOptions(
             listOf(
                 ChatRequestSystemMessage(
-                    "사용자가 입력한 키워드를 사용해 적절하게 이미지를 생성한다는 말을 만들어줘. 출력은 한국어로 해줘"
+                    "사용자가 입력한 키워드를 사용해 적절하게 이미지를 생성한다는 말을 만들어줘. 최대한 간결하게 1~2문장만 출력해줘. 출력은 한국어로 해주고, 반말하지말고 공손하게 존댓말로 해"
                 ), ChatRequestUserMessage(
                     "내가 만든 오렌지 주스를 광고하고 싶어. 오렌지 과즙이 주변에 터졌으면 좋겠고, 오렌지 주스가 담긴 컵과 오렌지 주스가 있었으면 좋겠어. 배경은 집 안이였으면 좋겠어."
                 ), ChatRequestAssistantMessage(
@@ -140,11 +144,19 @@ class ChatService(
 
     private fun chatCompletion(options: ChatCompletionsOptions) = azure.getChatCompletions(
         "PaletteGPT", options
-    ).onErrorResume(HttpResponseException::class.java) {
-        Mono.just(mapper.convertValue<AzureExceptionResponse>(it.value))
-            .flatMap { Mono.error<ChatCompletions>(CustomException(ErrorCode.CHAT_FILTERED)) }
-            .onErrorResume(Throwable::class.java) {
-                Mono.error(CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION))
+    )
+        .handleAzureError()
+
+    private fun <T> Mono<T>.handleAzureError() =
+        onErrorMap(HttpResponseException::class.java) {
+            println("yes?")
+            try {
+                if (mapper.convertValue<AzureExceptionResponse>(it.value)
+                    .error.innerError.code != "ResponsibleAIPolicyViolation")
+                    throw it
+                CustomException(ErrorCode.CHAT_FILTERED)
+            } catch (e: Throwable) {
+                CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
             }
-    }
+        }
 }

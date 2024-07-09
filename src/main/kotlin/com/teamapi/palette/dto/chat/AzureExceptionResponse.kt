@@ -1,5 +1,6 @@
 package com.teamapi.palette.dto.chat
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -7,8 +8,13 @@ data class AzureExceptionResponse(
     val error: AzureError
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class AzureError(
-    val message: String,
     val code: String,
-    val status: Int
-)
+    @JsonAlias("innererror", "inner_error")
+    val innerError: AzureInnerError
+) {
+    data class AzureInnerError(
+        val code: String
+    )
+}
