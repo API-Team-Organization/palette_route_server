@@ -8,7 +8,7 @@ data class Chat(
     @Id
     val id: Long? = null,
     val message: String,
-    val resource: String? = null,
+    val resource: String = "CHAT",
     val datetime: LocalDateTime,
     @Column("room_id")
     val roomId: Long,

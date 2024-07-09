@@ -14,7 +14,7 @@ class RoomController (
 ) {
     @PostMapping
     fun createRoom() = roomService.createRoom()
-        .thenReturn(Response.ok("룸 생성 성공"))
+        .map { ResponseBody.ok("룸 생성 성공", it) }
 
     @GetMapping("/list")
     fun getRoomList() = roomService.getRoomList()

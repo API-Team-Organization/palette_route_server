@@ -18,12 +18,15 @@ class RoomService (
     private val userRepository: UserRepository,
     private val sessionHolder: SessionHolder
 ) {
-    fun createRoom(): Mono<Void> {
+    fun createRoom(): Mono<RoomResponse> {
         return sessionHolder
             .me()
             .findUser(userRepository)
             .flatMap {
-                roomRepository.save(Room(userId = it.id!!)).then()
+                roomRepository.save(Room(userId = it.id!!))
+            }
+            .map {
+                RoomResponse(it.id!!, it.title ?: "")
             }
     }
 
