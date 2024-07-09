@@ -97,8 +97,12 @@ class AuthService(
     fun verifyEmail(code: String): Mono<Void> {
         return sessionHolder.me()
             .publishOn(Schedulers.boundedElastic())
-            .mapNotNull { verifyCodeRepository.findById(it).getOrNull() }
-            .flatMap { Mono.justOrEmpty(it) }
+            .map { verifyCodeRepository.findById(it) } // fetch
+            .flatMap {
+                @Suppress("UNCHECKED_CAST") // THIS IS FUCKING CHECKED
+                Mono.justOrEmpty(it.getOrNull()) as Mono<VerifyCode>
+            } // null check logic
+
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.ALREADY_VERIFIED)))
             .filter { it.code == code }
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.INVALID_VERIFY_CODE)))
