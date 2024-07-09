@@ -32,10 +32,12 @@ dependencies {
     implementation("org.springframework.session:spring-session-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
     implementation("org.springframework.ai:spring-ai-azure-openai-spring-boot-starter")
-    implementation("com.azure.spring:spring-cloud-azure-starter-storage-blob")
-    implementation("com.azure.spring:spring-cloud-azure-starter-storage")
+//    implementation("com.azure.spring:spring-cloud-azure-starter-storage-blob")
+//    implementation("com.azure.spring:spring-cloud-azure-starter-storage")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-mail")
+
+//    implementation(project(":sdwebui"))
 
     runtimeOnly("org.mariadb:r2dbc-mariadb:1.1.3")
     runtimeOnly("org.mariadb.jdbc:mariadb-java-client")
