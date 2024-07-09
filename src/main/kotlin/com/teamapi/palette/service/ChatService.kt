@@ -32,45 +32,42 @@ class ChatService(
     private val mapper: ObjectMapper
 ) {
     fun createChat(request: CreateChatRequest): Mono<ChatUpdateResponse> {
-        return createUserReturn(request.message).onErrorStop().flatMapMany {
-            Flux.zip(
-                Mono.just(it),
-                draw(request.message),
-//                Mono.empty<Mono<ImageGenerations>>(),
-                sessionHolder.me()
-            )
-        }.flatMap {
-            chatRepository.saveAll(
-                listOf(
-                    Chat(
-                        message = request.message,
-                        datetime = LocalDateTime.now(),
-                        roomId = request.roomId,
-                        userId = it.t3,
-                        isAi = false
-                    ),
-                    Chat(
-                        message = it.t2.data[0].url,
-                        datetime = LocalDateTime.now(),
-                        resource = "IMAGE",
-                        roomId = request.roomId,
-                        userId = it.t3,
-                        isAi = true
-                    ),
-                    Chat(
-                        message = it.t1.choices[0].message.content,
-                        datetime = LocalDateTime.now(),
-                        roomId = request.roomId,
-                        userId = it.t3,
-                        isAi = true
+        return chatRepository.existsById(request.roomId).filter { it }
+            .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
+            .then(createUserReturn(request.message)).flatMapMany {
+                Flux.zip(
+                    Mono.just(it), draw(request.message), sessionHolder.me()
+                )
+            }.flatMap {
+                chatRepository.saveAll(
+                    listOf(
+                        Chat(
+                            message = request.message,
+                            datetime = LocalDateTime.now(),
+                            roomId = request.roomId,
+                            userId = it.t3,
+                            isAi = false
+                        ), Chat(
+                            message = it.t2.data[0].url,
+                            datetime = LocalDateTime.now(),
+                            resource = "IMAGE",
+                            roomId = request.roomId,
+                            userId = it.t3,
+                            isAi = true
+                        ), Chat(
+                            message = it.t1.choices[0].message.content,
+                            datetime = LocalDateTime.now(),
+                            roomId = request.roomId,
+                            userId = it.t3,
+                            isAi = true
+                        )
                     )
                 )
-            )
-        }.filter { it.isAi }.map { res ->
-            ChatResponse(
-                res.id!!, res.message, res.datetime, res.roomId, res.userId, res.isAi, res.resource
-            )
-        }.collectList().map { ChatUpdateResponse(it) }
+            }.filter { it.isAi }.map { res ->
+                ChatResponse(
+                    res.id!!, res.message, res.datetime, res.roomId, res.userId, res.isAi, res.resource
+                )
+            }.collectList().map { ChatUpdateResponse(it) }
     }
 
     fun getChatList(roomId: Long): Mono<List<ChatResponse>> {
@@ -92,8 +89,7 @@ class ChatService(
     }
 
     // TODO: Apply Comfy, Prompt enhancing - in next semester
-    fun draw(query: String) = azure.getImageGenerations("Dalle3", ImageGenerationOptions(query))
-        .handleAzureError()
+    fun draw(query: String) = azure.getImageGenerations("Dalle3", ImageGenerationOptions(query)).handleAzureError()
 //        webui.txt2Img(
 //        Txt2ImageOptions(
 //            samplerName = SamplingMethod.EULER_A,
@@ -144,20 +140,16 @@ class ChatService(
 
     private fun chatCompletion(options: ChatCompletionsOptions) = azure.getChatCompletions(
         "PaletteGPT", options
-    )
-        .handleAzureError()
+    ).handleAzureError()
 
-    private fun <T> Mono<T>.handleAzureError() =
-        onErrorMap(HttpResponseException::class.java) {
-            println("yes?")
-            try {
-                if (mapper.convertValue<AzureExceptionResponse>(it.value)
-                    .error.innerError.code != "ResponsibleAIPolicyViolation")
-                    throw it
-                CustomException(ErrorCode.CHAT_FILTERED)
-            } catch (e: Throwable) {
-                e.printStackTrace()
-                CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
-            }
+    private fun <T> Mono<T>.handleAzureError() = onErrorMap(HttpResponseException::class.java) {
+        println("yes?")
+        try {
+            if (mapper.convertValue<AzureExceptionResponse>(it.value).error.innerError.code != "ResponsibleAIPolicyViolation") throw it
+            CustomException(ErrorCode.CHAT_FILTERED)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
         }
+    }
 }
