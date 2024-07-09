@@ -114,6 +114,7 @@ class MailVerifyProvider(private val mailSender: JavaMailSender) {
                 CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
             }
             .onErrorMap(MailException::class.java) {
+                it.printStackTrace()
                 CustomException(ErrorCode.MAIL_SEND_FAILED)
             }
             .then()
