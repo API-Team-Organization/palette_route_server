@@ -156,6 +156,7 @@ class ChatService(
                     throw it
                 CustomException(ErrorCode.CHAT_FILTERED)
             } catch (e: Throwable) {
+                e.printStackTrace()
                 CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
             }
         }
