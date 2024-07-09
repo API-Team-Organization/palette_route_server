@@ -56,5 +56,5 @@ class AuthController(
     @DeleteMapping("/resign")
     fun resign(webSession: WebSession) = authService
         .resign(webSession)
-        .thenReturn(Response.ok("유저 삭제 성공"))
+        .thenReturn(Response.ok("회원탈퇴 성공"))
 }
