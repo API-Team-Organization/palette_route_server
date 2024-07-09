@@ -45,11 +45,13 @@ class AuthService(
             }
     }
 
-    @Suppress("BlockingMethodInNonBlockingContext")
     private fun createVerifyCode(user: User): Mono<Void> {
         val verifyCode = mailVerifyProvider.createVerifyCode()
         return mailVerifyProvider.sendEmail(user.email, verifyCode)
-            .then(Mono.just(verifyCodeRepository.save(VerifyCode(user.id!!, verifyCode))))
+            .publishOn(Schedulers.boundedElastic())
+            .doOnSuccess {
+                verifyCodeRepository.save(VerifyCode(user.id!!, verifyCode))
+            }
             .then()
     }
 
@@ -90,6 +92,8 @@ class AuthService(
         return sessionHolder
             .me()
             .findUser(userRepository)
+            .publishOn(Schedulers.boundedElastic())
+            .doOnNext { verifyCodeRepository.deleteById(it.id!!) }
             .flatMap { userRepository.delete(it) }
             .then(Mono.defer { webSession.invalidate() })
     }
@@ -98,10 +102,7 @@ class AuthService(
         return sessionHolder.me()
             .publishOn(Schedulers.boundedElastic())
             .map { verifyCodeRepository.findById(it) } // fetch
-            .flatMap {
-                @Suppress("UNCHECKED_CAST") // THIS IS FUCKING CHECKED
-                Mono.justOrEmpty(it.getOrNull()) as Mono<VerifyCode>
-            } // null check logic
+            .flatMap { Mono.justOrEmpty(it.getOrNull()) } // null check logic
 
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.ALREADY_VERIFIED)))
             .filter { it.code == code }
@@ -112,8 +113,7 @@ class AuthService(
                     .map { it.copy(state = UserState.ACTIVE) }
                     .flatMap { userRepository.save(it) }
                     .publishOn(Schedulers.boundedElastic())
-
-                    .map { verifyCodeRepository.delete(item) }
+                    .doOnNext { verifyCodeRepository.delete(item) }
                     .then()
             }
     }
@@ -123,14 +123,11 @@ class AuthService(
             .findUser(userRepository)
             .filter { it.state == UserState.CREATED }
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.ALREADY_VERIFIED)))
+
             .publishOn(Schedulers.boundedElastic())
+            .doOnNext { verifyCodeRepository.deleteById(it.id!!) } // if exists
 
-            .map {
-                verifyCodeRepository.deleteById(it.id!!) // if exists
-                it
-            }
             .flatMap { createVerifyCode(it) }
-
             .then()
     }
 }
