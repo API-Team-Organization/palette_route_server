@@ -1,0 +1,51 @@
+name: GitHub CI with Gradle
+
+on: [ push ]
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout to develop
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Create secured configurations
+        run: |
+          touch ./src/main/resources/application.yml
+          echo "${{ secrets.APPLICATION_YML }}" > ./src/main/resources/application.yml
+          
+          touch ./src/main/resources/palette.p12
+          echo "${{ secrets.PALETTE_P12 }}" | base64 --decode > ./src/main/resources/palette.p12
+
+      - name: Build with Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew build
+
+  publish:
+    if: ${{ always() && contains(join(needs.*.result, ','), 'success') && github.ref == 'refs/heads/main' }}
+    needs: [build]
+    runs-on: self-hosted
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Add to Docker
+        run: |
+          docker container rm route -f
+          docker rmi palette_route -f
+          docker build --file Dockerfile -t palette_route .
+          docker run -d -p 8080:8080 --name route palette_route
