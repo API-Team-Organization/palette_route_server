@@ -14,6 +14,7 @@ import com.teamapi.palette.repository.ChatRepository
 import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
+import com.teamapi.palette.util.validateUser
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -28,8 +29,10 @@ class ChatService(
     private val mapper: ObjectMapper
 ) {
     fun createChat(request: CreateChatRequest): Mono<ChatUpdateResponse> {
-        return chatRepository.existsById(request.roomId).filter { it }
+        return roomRepository.findById(request.roomId)
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
+            .validateUser(sessionHolder)
+
             .then(createUserReturn(request.message)).flatMapMany {
                 Flux.zip(Mono.just(it), draw(request.message), sessionHolder.me())
             }.flatMap {
