@@ -12,32 +12,29 @@ import com.teamapi.palette.dto.chat.CreateChatRequest
 import com.teamapi.palette.entity.Chat
 import com.teamapi.palette.repository.ChatRepository
 import com.teamapi.palette.repository.RoomRepository
-import com.teamapi.palette.repository.UserRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import com.teamapi.palette.util.findUser
+import com.teamapi.palette.util.validateUser
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.kotlin.core.publisher.switchIfEmpty
 import java.time.LocalDateTime
 
 @Service
 class ChatService(
     private val chatRepository: ChatRepository,
     private val sessionHolder: SessionHolder,
-    private val userRepository: UserRepository,
     private val roomRepository: RoomRepository,
     private val azure: OpenAIAsyncClient,
     private val mapper: ObjectMapper
 ) {
     fun createChat(request: CreateChatRequest): Mono<ChatUpdateResponse> {
-        return chatRepository.existsById(request.roomId).filter { it }
+        return roomRepository.findById(request.roomId)
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
+            .validateUser(sessionHolder)
+
             .then(createUserReturn(request.message)).flatMapMany {
-                Flux.zip(
-                    Mono.just(it), draw(request.message), sessionHolder.me()
-                )
+                Flux.zip(Mono.just(it), draw(request.message), sessionHolder.me())
             }.flatMap {
                 chatRepository.saveAll(
                     listOf(
@@ -71,21 +68,17 @@ class ChatService(
     }
 
     fun getChatList(roomId: Long): Mono<List<ChatResponse>> {
-        return sessionHolder.me().findUser(userRepository).flatMap { user ->
-            roomRepository.findById(roomId).switchIfEmpty {
-                error(CustomException(ErrorCode.ROOM_NOT_FOUND))
-            }.flatMapMany { room ->
-                if (room.userId != user.id) {
-                    return@flatMapMany Flux.error(CustomException(ErrorCode.FORBIDDEN))
-                }
+        return roomRepository.findById(roomId)
+            .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
 
-                chatRepository.findByRoomId(roomId)
-            }.map {
-                ChatResponse(
-                    it.id!!, it.message, it.datetime, it.roomId, it.userId, it.isAi, it.resource
-                )
-            }.collectList()
-        }
+            .zipWith(sessionHolder.me())
+            .filter { it.t1.userId != it.t2 }
+            .switchIfEmpty(Mono.error(CustomException(ErrorCode.FORBIDDEN)))
+            .map { it.t1 }
+
+            .flatMapMany { chatRepository.findByRoomId(it.id!!) }
+            .map { ChatResponse(it.id!!, it.message, it.datetime, it.roomId, it.userId, it.isAi, it.resource) }
+            .collectList()
     }
 
     // TODO: Apply Comfy, Prompt enhancing - in next semester
