@@ -136,7 +136,9 @@ class ChatService(
     ).handleAzureError()
 
     private fun <T> Mono<T>.handleAzureError() = onErrorMap(HttpResponseException::class.java) {
-        println("yes?")
+        println(it.value)
+        println()
+        return@onErrorMap CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
         try {
             if (mapper.convertValue<AzureExceptionResponse>(it.value).error.innerError.code != "ResponsibleAIPolicyViolation") throw it
             CustomException(ErrorCode.CHAT_FILTERED)
