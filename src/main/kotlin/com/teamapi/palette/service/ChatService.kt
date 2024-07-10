@@ -15,6 +15,7 @@ import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.util.validateUser
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -28,6 +29,7 @@ class ChatService(
     private val azure: OpenAIAsyncClient,
     private val mapper: ObjectMapper
 ) {
+    private val log = LoggerFactory.getLogger(ChatService::class.java)
     fun createChat(request: CreateChatRequest): Mono<ChatUpdateResponse> {
         return roomRepository.findById(request.roomId)
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
@@ -136,14 +138,12 @@ class ChatService(
     ).handleAzureError()
 
     private fun <T> Mono<T>.handleAzureError() = onErrorMap(HttpResponseException::class.java) {
-        println(it.value)
-        println()
-        return@onErrorMap CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
         try {
             if (mapper.convertValue<AzureExceptionResponse>(it.value).error.innerError.code != "ResponsibleAIPolicyViolation") throw it
             CustomException(ErrorCode.CHAT_FILTERED)
         } catch (e: Throwable) {
-            e.printStackTrace()
+            log.error("Error on Azure: ", it)
+            log.error("Body: {}", it.value)
             CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
         }
     }
