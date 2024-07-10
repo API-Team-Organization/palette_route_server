@@ -72,11 +72,7 @@ class ChatService(
     fun getChatList(roomId: Long): Mono<List<ChatResponse>> {
         return roomRepository.findById(roomId)
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
-
-            .zipWith(sessionHolder.me())
-            .filter { it.t1.userId != it.t2 }
-            .switchIfEmpty(Mono.error(CustomException(ErrorCode.FORBIDDEN)))
-            .map { it.t1 }
+            .validateUser(sessionHolder)
 
             .flatMapMany { chatRepository.findByRoomId(it.id!!) }
             .map { ChatResponse(it.id!!, it.message, it.datetime, it.roomId, it.userId, it.isAi, it.resource) }
