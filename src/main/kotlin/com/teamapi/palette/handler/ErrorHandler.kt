@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.bind.support.WebExchangeBindException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.server.MethodNotAllowedException
+import org.springframework.web.server.ServerWebInputException
 import org.springframework.web.server.UnsupportedMediaTypeStatusException
 
 @Suppress("unused")
@@ -34,4 +35,8 @@ class ErrorHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     private fun handleMethodArgumentTypeMismatchException(e: MethodArgumentTypeMismatchException) =
         ErrorResponse.of(ErrorCode.INVALID_PARAMETER, e.parameter.method?.name)
+
+    @ExceptionHandler(ServerWebInputException::class)
+    private fun handleServerWebInputException(e: ServerWebInputException) =
+        ErrorResponse.of(ErrorCode.ISSUE_ON_REQUEST_BODY, e.reason)
 }
