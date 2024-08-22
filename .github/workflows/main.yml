@@ -4,7 +4,7 @@ on: [ push ]
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     permissions:
       contents: read
@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'zulu'
+          distribution: 'corretto'
 
       - name: Create secured configurations
         run: |
@@ -34,18 +34,30 @@ jobs:
           chmod +x gradlew
           ./gradlew build
 
+      - name: Upload built image
+        run: |
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker build --file Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest
+
   publish:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') && github.ref == 'refs/heads/main' }}
     needs: [build]
-    runs-on: self-hosted
-
-    permissions:
-      contents: read
+    runs-on: ubuntu-latest
 
     steps:
       - name: Add to Docker
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
         run: |
-          docker container rm route -f
-          docker rmi palette_route -f
-          docker build --file Dockerfile -t palette_route .
-          docker run -d -p 8080:8080 --name route palette_route
+          docker stop $(docker ps -a -f 'ancestor=${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}')
+          docker rm $(docker ps -a -f 'ancestor=${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}')
+          docker image prune -a -f
+          
+          docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest
+          
+          docker run -d -p 8080:8080 --name route ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}
