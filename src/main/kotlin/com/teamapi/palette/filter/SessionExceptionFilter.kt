@@ -29,7 +29,7 @@ class SessionExceptionFilter(
             }
             .onErrorResume(NoResourceFoundException::class.java) {
                 val reason = it.reason!!
-                val f = reason.indexOfLast { it == ' ' }
+                val f = reason.indexOfLast { i -> i == ' ' }
                 exchange.response.writeJson(
                     ErrorCode.ENDPOINT_NOT_FOUND,
                     URLDecoder.decode(reason.substring(f + 1, reason.length - 1), charset("utf-8"))
