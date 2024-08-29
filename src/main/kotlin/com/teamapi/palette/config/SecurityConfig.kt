@@ -1,6 +1,7 @@
 package com.teamapi.palette.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.teamapi.palette.entity.consts.UserState
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.Response
 import org.springframework.context.annotation.Bean
@@ -48,7 +49,9 @@ class SecurityConfig(private val objectMapper: ObjectMapper) {
                 it
                     .pathMatchers("/auth/login", "/auth/register").permitAll()
                     .pathMatchers("/v3/api-docs/**", "/webjars/swagger-ui/**").permitAll()
-                    .anyExchange().authenticated()
+                    .pathMatchers("/auth/resign", "/auth/session", "/auth/logout").permitAll()
+                    .pathMatchers("/auth/verify", "/auth/resend").hasRole(UserState.CREATED.name)
+                    .anyExchange().hasRole(UserState.ACTIVE.name)
             }
             .exceptionHandling {
                 it.authenticationEntryPoint { exchange, ex ->
@@ -61,6 +64,7 @@ class SecurityConfig(private val objectMapper: ObjectMapper) {
                     )
                 }
                     .accessDeniedHandler { exchange, denied ->
+                        denied.printStackTrace()
                         json(
                             exchange,
                             Response(
