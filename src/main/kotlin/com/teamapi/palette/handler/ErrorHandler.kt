@@ -37,6 +37,8 @@ class ErrorHandler {
         ErrorResponse.of(ErrorCode.INVALID_PARAMETER, e.parameter.method?.name)
 
     @ExceptionHandler(ServerWebInputException::class)
-    private fun handleServerWebInputException(e: ServerWebInputException) =
-        ErrorResponse.of(ErrorCode.ISSUE_ON_REQUEST_BODY, e.reason)
+    private fun handleServerWebInputException(e: ServerWebInputException): ResponseEntity<ErrorResponse> {
+        e.printStackTrace()
+        return ErrorResponse.of(ErrorCode.ISSUE_ON_REQUEST_BODY, e.reason)
+    }
 }
