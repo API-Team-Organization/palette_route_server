@@ -56,8 +56,8 @@ jobs:
           script: |
             docker stop $(docker ps -aq -f 'ancestor=${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}')
             docker rm $(docker ps -aq -f 'ancestor=${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}')
-            docker image prune -a -f
-            
+#            docker image prune -a -f
+
             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest
             
             docker run -d -p 8080:8080 --name route ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}
