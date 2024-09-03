@@ -1,9 +1,9 @@
 package com.teamapi.palette.service
 
-import com.teamapi.palette.entity.AuthUserInfo
 import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextImpl
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository.DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
@@ -33,13 +33,13 @@ class SessionHolder {
             }
     }
 
-    fun userInfo(): Mono<AuthUserInfo> {
+    fun userInfo(): Mono<UserDetails> {
         return getSecurityContext()
             .map { it.authentication.principal }
-            .cast(AuthUserInfo::class.java)
+            .cast(UserDetails::class.java)
     }
 
     fun me(): Mono<Long> {
-        return userInfo().map { it.id }
+        return userInfo().map { it.username.toLong() }
     }
 }

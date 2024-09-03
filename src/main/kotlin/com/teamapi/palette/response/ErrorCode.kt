@@ -22,7 +22,8 @@ enum class ErrorCode(
     MEDIA_TYPE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "허용되지 않은 미디어 타입 '%s' (지원되는 타입: '%s')"),
 
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 룸을 찾을 수 없음"),
-    FORBIDDEN(HttpStatus.FORBIDDEN, "권한 없음"),
+    NOT_YOUR_ROOM(HttpStatus.NOT_FOUND, "해당 룸에는 접근 권한이 없음"),
+    FORBIDDEN(HttpStatus.FORBIDDEN, "'%s' 엔드포인트에 대해 접근 할 수 있는 권한이 없음"),
 
     CHAT_FILTERED(HttpStatus.BAD_REQUEST, "부적절한 내용 감지. 내용을 수정 해 주세요.")
     ;

@@ -17,5 +17,5 @@ fun Mono<Long>.findUser(userRepository: R2dbcRepository<User, Long>) =
 fun Mono<Room>.validateUser(sessionHolder: SessionHolder): Mono<Room> =
     zipWith(sessionHolder.me())
         .filter { it.t1.userId == it.t2 }
-        .switchIfEmpty(Mono.error(CustomException(ErrorCode.FORBIDDEN)))
+        .switchIfEmpty(Mono.error(CustomException(ErrorCode.NOT_YOUR_ROOM)))
         .map { it.t1 }

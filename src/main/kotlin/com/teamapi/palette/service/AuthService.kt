@@ -13,6 +13,8 @@ import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.util.findUser
 import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository.DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME
 import org.springframework.stereotype.Service
@@ -24,6 +26,7 @@ import kotlin.jvm.optionals.getOrNull
 @Service
 class AuthService(
     private val userRepository: UserRepository,
+    private val userDetailsService: ReactiveUserDetailsService,
     private val verifyCodeRepository: VerifyCodeRepository,
     private val mailVerifyProvider: MailVerifyProvider,
     private val passwordEncoder: PasswordEncoder,
@@ -41,7 +44,17 @@ class AuthService(
                     .thenReturn(it)
             }
             .flatMap {
-                authenticate(it.email, request.password)
+                userDetailsService.findByUsername(it.email)
+                    .map { principal ->
+                        UsernamePasswordAuthenticationToken(
+                            principal,
+                            null,
+                            principal.authorities
+                        )
+                    }
+            }
+            .flatMap {
+                authenticate(it)
             }
     }
 
@@ -49,27 +62,26 @@ class AuthService(
         val verifyCode = mailVerifyProvider.createVerifyCode()
         return mailVerifyProvider.sendEmail(user.email, verifyCode)
             .publishOn(Schedulers.boundedElastic())
-            .doOnSuccess {
-                verifyCodeRepository.save(VerifyCode(user.id!!, verifyCode))
-            }
+            .doOnSuccess { verifyCodeRepository.save(VerifyCode(user.id!!, verifyCode)) }
             .then()
     }
 
     fun authenticate(
         email: String, password: String,
     ): Mono<Void> {
-        return authManager.authenticate(
-            UsernamePasswordAuthenticationToken(email, password)
-        )
+        return authManager.authenticate(UsernamePasswordAuthenticationToken(email, password))
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.INVALID_CREDENTIALS)))
-            .flatMap { auth ->
-                sessionHolder.getSecurityContext().map { it.apply { authentication = auth } }
-            } // context
+            .flatMap { authenticate(it) }
+            .then()
+    }
+
+    private fun authenticate(auth: Authentication): Mono<Void> {
+        println(auth)
+        return sessionHolder.getSecurityContext().map { it.apply { authentication = auth } } // context
+            .zipWith(sessionHolder.getWebSession())
             .flatMap {
-                sessionHolder.getWebSession().flatMap { session ->
-                    session.attributes[DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME] = it
-                    session.changeSessionId()
-                }
+                it.t2.attributes[DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME] = it.t1
+                it.t2.changeSessionId()
             }
     }
 
@@ -78,6 +90,7 @@ class AuthService(
             .flatMap {
                 authManager.authenticate(UsernamePasswordAuthenticationToken(it.username, request.beforePassword))
             }
+            .switchIfEmpty(Mono.error(CustomException(ErrorCode.INVALID_CREDENTIALS)))
             .then(sessionHolder.me())
             .findUser(userRepository)
             .flatMap {
@@ -103,7 +116,6 @@ class AuthService(
             .publishOn(Schedulers.boundedElastic())
             .map { verifyCodeRepository.findById(it) } // fetch
             .flatMap { Mono.justOrEmpty(it.getOrNull()) } // null check logic
-
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.ALREADY_VERIFIED)))
             .filter { it.code == code }
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.INVALID_VERIFY_CODE)))
@@ -112,6 +124,19 @@ class AuthService(
                 userRepository.findById(item.userId)
                     .map { it.copy(state = UserState.ACTIVE) }
                     .flatMap { userRepository.save(it) }
+                    .zipWhen {
+                        userDetailsService.findByUsername(it.email)
+                            .map { principal ->
+                                UsernamePasswordAuthenticationToken(
+                                    principal,
+                                    null,
+                                    principal.authorities
+                                )
+                            }
+                    }
+                    .flatMap {
+                        authenticate(it.t2).thenReturn(it.t1)
+                    }
                     .publishOn(Schedulers.boundedElastic())
                     .doOnNext { verifyCodeRepository.delete(item) }
                     .then()

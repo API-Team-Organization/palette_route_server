@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.teamapi.palette.entity.consts.UserState
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.Response
+import com.teamapi.palette.response.exception.ErrorResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
@@ -49,28 +50,21 @@ class SecurityConfig(private val objectMapper: ObjectMapper) {
                 it
                     .pathMatchers("/auth/login", "/auth/register").permitAll()
                     .pathMatchers("/v3/api-docs/**", "/webjars/swagger-ui/**").permitAll()
-                    .pathMatchers("/auth/resign", "/auth/session", "/auth/logout").permitAll()
+                    .pathMatchers("/auth/resign", "/auth/session", "/auth/logout").authenticated()
                     .pathMatchers("/auth/verify", "/auth/resend").hasRole(UserState.CREATED.name)
                     .anyExchange().hasRole(UserState.ACTIVE.name)
             }
             .exceptionHandling {
-                it.authenticationEntryPoint { exchange, ex ->
+                it.authenticationEntryPoint { exchange, _ ->
                     json(
                         exchange,
-                        Response(
-                            ErrorCode.INVALID_SESSION.statusCode.value(),
-                            ErrorCode.INVALID_SESSION.message
-                        )
+                        ErrorResponse.ofRaw(ErrorCode.INVALID_SESSION)
                     )
                 }
-                    .accessDeniedHandler { exchange, denied ->
-                        denied.printStackTrace()
+                    .accessDeniedHandler { exchange, _ ->
                         json(
                             exchange,
-                            Response(
-                                ErrorCode.ENDPOINT_NOT_FOUND.statusCode.value(),
-                                ErrorCode.ENDPOINT_NOT_FOUND.message
-                            )
+                            ErrorResponse.ofRaw(ErrorCode.FORBIDDEN, exchange.request.path.value())
                         )
                     }
             }

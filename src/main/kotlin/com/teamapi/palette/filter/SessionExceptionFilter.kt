@@ -36,6 +36,7 @@ class SessionExceptionFilter(
                 )
             }
             .onErrorResume(BadCredentialsException::class.java) {
+                it.printStackTrace()
                 exchange.response.writeJson(ErrorCode.INVALID_CREDENTIALS)
             }
             .onErrorResume(Exception::class.java) {
