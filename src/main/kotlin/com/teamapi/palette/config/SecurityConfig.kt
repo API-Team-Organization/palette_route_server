@@ -42,6 +42,7 @@ class SecurityConfig(private val objectMapper: ObjectMapper) {
         return res.writeWith(Flux.just(res.bufferFactory().wrap(objectMapper.writeValueAsBytes(data))))
     }
 
+
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 3)
     fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
@@ -49,7 +50,7 @@ class SecurityConfig(private val objectMapper: ObjectMapper) {
             .authorizeExchange {
                 it
                     .pathMatchers("/auth/login", "/auth/register").permitAll()
-                    .pathMatchers("/v3/api-docs/**", "/webjars/swagger-ui/**").permitAll()
+                    .pathMatchers("/v3/api-docs/**", "/external/**", "swagger").permitAll()
                     .pathMatchers("/auth/resign", "/auth/session", "/auth/logout").authenticated()
                     .pathMatchers("/auth/verify", "/auth/resend").hasRole(UserState.CREATED.name)
                     .anyExchange().hasRole(UserState.ACTIVE.name)
