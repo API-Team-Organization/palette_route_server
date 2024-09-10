@@ -8,39 +8,32 @@ import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.util.validateUser
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Mono
 
 @Service
 class RoomService(
     private val roomRepository: RoomRepository,
-    private val sessionHolder: SessionHolder
+    private val sessionHolder: SuspendSessionHolder
 ) {
-    fun createRoom(): Mono<RoomResponse> {
-        return sessionHolder.me()
-            .flatMap { roomRepository.save(Room(userId = it)) }
+    suspend fun createRoom(): RoomResponse {
+        val room = roomRepository.save(Room(userId = sessionHolder.me()))
+        return RoomResponse(room.id!!, room.title ?: "")
+    }
+
+    suspend fun getRoomList(): List<RoomResponse> {
+        return roomRepository.findByUserId(sessionHolder.me())
             .map { RoomResponse(it.id!!, it.title ?: "") }
     }
 
-    fun getRoomList(): Mono<List<RoomResponse>> {
-        return sessionHolder.me()
-            .flatMapMany { roomRepository.findByUserId(it) }
-            .map { RoomResponse(it.id!!, it.title ?: "") }
-            .collectList()
+    suspend fun updateRoomTitle(updateRoomTitleRequest: UpdateRoomTitleRequest) {
+        val room = roomRepository.findById(updateRoomTitleRequest.id) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
+        room.validateUser(sessionHolder)
+        roomRepository.save(room.copy(title = updateRoomTitleRequest.title))
     }
 
-    fun updateRoomTitle(updateRoomTitleRequest: UpdateRoomTitleRequest): Mono<Void> {
-        return roomRepository
-            .findById(updateRoomTitleRequest.id)
-            .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
-            .validateUser(sessionHolder)
-            .flatMap { roomRepository.save(it.copy(title = updateRoomTitleRequest.title)) }
-            .then()
-    }
+    suspend fun deleteRoom(roomId: Long) {
+        val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
+        room.validateUser(sessionHolder)
 
-    fun deleteRoom(roomId: Long): Mono<Void> {
-        return roomRepository.findById(roomId)
-            .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
-            .validateUser(sessionHolder)
-            .flatMap { roomRepository.delete(it) }
+        return roomRepository.delete(room)
     }
 }
