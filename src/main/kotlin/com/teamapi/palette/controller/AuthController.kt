@@ -1,5 +1,6 @@
 package com.teamapi.palette.controller
 
+import com.teamapi.palette.annotations.SwaggerRequireAuthorize
 import com.teamapi.palette.dto.auth.EmailVerifyRequest
 import com.teamapi.palette.dto.auth.LoginRequest
 import com.teamapi.palette.dto.auth.RegisterRequest
@@ -29,11 +30,13 @@ class AuthController(
         .thenReturn(Response.ok("로그인 성공"))
 
     @PostMapping("/resend")
+    @SwaggerRequireAuthorize
     fun resendCode() = authService
         .resendVerifyCode()
         .thenReturn(Response.ok("이메일 코드 재전송 성공"))
 
     @PostMapping("/verify")
+    @SwaggerRequireAuthorize
     fun verify(@RequestBody @Valid request: Mono<EmailVerifyRequest>) = request
         .flatMap {
             authService.verifyEmail(it.code)
@@ -41,19 +44,23 @@ class AuthController(
         .thenReturn(Response.ok("이메일 인증 성공"))
 
     @PostMapping("/logout")
+    @SwaggerRequireAuthorize
     fun logout() = sessionHolder.getWebSession()
         .flatMap { it.invalidate() }
         .thenReturn(Response.ok("로그아웃 성공"))
 
     @GetMapping("/session")
+    @SwaggerRequireAuthorize
     fun updateCurrentSession() = Mono.just(Response.ok("세션 갱신 성공"))
 
     @PatchMapping("/password")
+    @SwaggerRequireAuthorize
     fun passwordUpdate(@RequestBody @Valid request: PasswordUpdateRequest) = authService
         .passwordUpdate(request)
         .thenReturn(Response.ok("비밀번호 변경 성공. 다시 로그인 해 주세요."))
 
     @DeleteMapping("/resign")
+    @SwaggerRequireAuthorize
     fun resign(webSession: WebSession) = authService
         .resign(webSession)
         .thenReturn(Response.ok("회원탈퇴 성공"))

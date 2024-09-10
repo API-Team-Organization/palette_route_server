@@ -1,17 +1,15 @@
 package com.teamapi.palette.controller
 
+import com.teamapi.palette.annotations.SwaggerRequireAuthorize
 import com.teamapi.palette.dto.user.UpdateRequest
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
 import com.teamapi.palette.service.UserService
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/info")
+@SwaggerRequireAuthorize
 class InfoController(
     private val userService: UserService
 ) {

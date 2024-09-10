@@ -1,5 +1,6 @@
 package com.teamapi.palette.controller
 
+import com.teamapi.palette.annotations.SwaggerRequireAuthorize
 import com.teamapi.palette.dto.room.UpdateRoomTitleRequest
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/room")
+@SwaggerRequireAuthorize
 class RoomController (
     private val roomService: RoomService
 ) {
