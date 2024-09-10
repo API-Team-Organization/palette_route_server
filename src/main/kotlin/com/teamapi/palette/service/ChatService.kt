@@ -9,8 +9,8 @@ import com.teamapi.palette.dto.chat.AzureExceptionResponse
 import com.teamapi.palette.dto.chat.ChatResponse
 import com.teamapi.palette.dto.chat.ChatUpdateResponse
 import com.teamapi.palette.entity.Chat
-import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.repository.ChatRepository
+import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import kotlinx.coroutines.flow.filter
@@ -40,26 +40,29 @@ class ChatService(
         room.validateUser(sessionHolder)
 
         val userId = sessionHolder.me()
+        chatRepository.save(Chat(
+            message = message,
+            datetime = LocalDateTime.now(),
+            roomId = roomId,
+            userId = userId,
+            isAi = false
+        ))
         val (chat, image) = Mono.zip(createUserReturn(message), draw(message)).awaitSingle()
 
+        val stamp = LocalDateTime.now()
         val saved = chatRepository.saveAll(
             listOf(
                 Chat(
-                    message = message,
-                    datetime = LocalDateTime.now(),
-                    roomId = roomId,
-                    userId = userId,
-                    isAi = false
-                ), Chat(
                     message = image.data[0].url,
-                    datetime = LocalDateTime.now(),
+                    datetime = stamp,
                     resource = "IMAGE",
                     roomId = roomId,
                     userId = userId,
                     isAi = true
-                ), Chat(
+                ),
+                Chat(
                     message = chat.choices[0].message.content,
-                    datetime = LocalDateTime.now(),
+                    datetime = stamp.plusSeconds(2),
                     roomId = roomId,
                     userId = userId,
                     isAi = true
