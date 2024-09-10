@@ -5,7 +5,9 @@ import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.service.SessionHolder
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
+import org.springframework.data.relational.core.mapping.Table
 
+@Table
 data class Room(
     @Id
     val id: Long? = null,
