@@ -10,7 +10,7 @@ import com.teamapi.palette.dto.chat.ChatResponse
 import com.teamapi.palette.dto.chat.ChatUpdateResponse
 import com.teamapi.palette.entity.Chat
 import com.teamapi.palette.repository.RoomRepository
-import com.teamapi.palette.repository.chat.ChatRepository
+import com.teamapi.palette.repository.ChatRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import kotlinx.coroutines.flow.filter
@@ -80,6 +80,7 @@ class ChatService(
 
         return chatRepository.findAllByRoomIdIsOrderByDatetimeDesc(room.id!!, pageable)
             .map { ChatResponse(it.id!!, it.message, it.datetime, it.roomId, it.userId, it.isAi, it.resource) }
+            .toList()
     }
 
     // TODO: Apply Comfy, Prompt enhancing - in next semester

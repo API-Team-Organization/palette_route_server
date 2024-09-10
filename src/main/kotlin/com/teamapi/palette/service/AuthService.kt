@@ -70,7 +70,7 @@ class AuthService(
         context.authentication = auth
         session.attributes[DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME] = context
 
-        return session.changeSessionId().awaitSingle().let {} // do nothing
+        session.changeSessionId().awaitSingleOrNull()
     }
 
     suspend fun passwordUpdate(request: PasswordUpdateRequest) {

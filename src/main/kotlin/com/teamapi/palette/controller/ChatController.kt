@@ -34,7 +34,10 @@ class ChatController(
         @PathVariable("roomId") roomId: Long,
         @Parameter(hidden = true) pageRequest: DefaultPageRequest
     ): ResponseEntity<ResponseBody<List<ChatResponse>>> {
-        val data = chatService.getChatList(roomId, PageRequest.of(pageRequest.page, pageRequest.size))
+        val data = chatService.getChatList(
+            roomId = roomId,
+            pageable = PageRequest.of(pageRequest.page, pageRequest.size)
+        )
         return ResponseBody.ok("채팅 조회 성공", data)
     }
 }
