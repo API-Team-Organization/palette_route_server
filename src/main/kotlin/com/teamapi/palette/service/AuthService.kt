@@ -6,11 +6,15 @@ import com.teamapi.palette.entity.User
 import com.teamapi.palette.entity.VerifyCode
 import com.teamapi.palette.entity.consts.UserState
 import com.teamapi.palette.extern.MailVerifyProvider
-import com.teamapi.palette.repository.UserRepository
+import com.teamapi.palette.repository.SuspendUserRepository
 import com.teamapi.palette.repository.VerifyCodeRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import com.teamapi.palette.util.findUser
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
+import kotlinx.coroutines.withContext
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
@@ -18,141 +22,112 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository.DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME
 import org.springframework.stereotype.Service
-import org.springframework.web.server.WebSession
-import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
-import kotlin.jvm.optionals.getOrNull
 
 @Service
 class AuthService(
-    private val userRepository: UserRepository,
+    private val coroutineUserRepository: SuspendUserRepository,
     private val userDetailsService: ReactiveUserDetailsService,
     private val verifyCodeRepository: VerifyCodeRepository,
     private val mailVerifyProvider: MailVerifyProvider,
     private val passwordEncoder: PasswordEncoder,
-    private val sessionHolder: SessionHolder,
+    private val suspendSessionHolder: SuspendSessionHolder,
     private val authManager: ReactiveAuthenticationManager,
 ) {
-    fun register(request: RegisterRequest): Mono<Void> {
-        return userRepository.existsByEmail(request.email)
-            .flatMap {
-                if (it) Mono.error(CustomException(ErrorCode.USER_ALREADY_EXISTS))
-                else userRepository.save(request.toEntity(passwordEncoder))
-            }
-            .flatMap {
-                createVerifyCode(it)
-                    .thenReturn(it)
-            }
-            .flatMap {
-                userDetailsService.findByUsername(it.email)
-                    .map { principal ->
-                        UsernamePasswordAuthenticationToken(
-                            principal,
-                            null,
-                            principal.authorities
-                        )
-                    }
-            }
-            .flatMap {
-                authenticate(it)
-            }
+    suspend fun register(request: RegisterRequest) {
+        if (coroutineUserRepository.existsByEmail(request.email))
+            throw CustomException(ErrorCode.USER_ALREADY_EXISTS)
+
+        val user = coroutineUserRepository.save(request.toEntity(passwordEncoder))
+
+        createVerifyCode(user) // send verify code
+
+        val auth = createPreAuthorizedToken(user.email)
+        return updateSessionWithAuthenticate(auth)
+
     }
 
-    private fun createVerifyCode(user: User): Mono<Void> {
+    private suspend fun createVerifyCode(user: User) {
         val verifyCode = mailVerifyProvider.createVerifyCode()
-        return mailVerifyProvider.sendEmail(user.email, verifyCode)
-            .publishOn(Schedulers.boundedElastic())
-            .doOnSuccess { verifyCodeRepository.save(VerifyCode(user.id!!, verifyCode)) }
-            .then()
+        mailVerifyProvider.sendEmail(user.email, verifyCode)
+        withContext(Dispatchers.IO) {
+            verifyCodeRepository.save(VerifyCode(user.id!!, verifyCode))
+        }
     }
 
-    fun authenticate(
-        email: String, password: String,
-    ): Mono<Void> {
-        return authManager.authenticate(UsernamePasswordAuthenticationToken(email, password))
-            .switchIfEmpty(Mono.error(CustomException(ErrorCode.INVALID_CREDENTIALS)))
-            .flatMap { authenticate(it) }
-            .then()
+    suspend fun authenticate(email: String, password: String) {
+        val auth =
+            authManager.authenticate(UsernamePasswordAuthenticationToken(email, password)).awaitSingleOrNull()
+                ?: throw CustomException(ErrorCode.INVALID_CREDENTIALS)
+
+        return updateSessionWithAuthenticate(auth)
     }
 
-    private fun authenticate(auth: Authentication): Mono<Void> {
+    private suspend fun updateSessionWithAuthenticate(auth: Authentication) {
         println(auth)
-        return sessionHolder.getSecurityContext().map { it.apply { authentication = auth } } // context
-            .zipWith(sessionHolder.getWebSession())
-            .flatMap {
-                it.t2.attributes[DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME] = it.t1
-                it.t2.changeSessionId()
-            }
+        val session = suspendSessionHolder.getWebSession()
+        val context = suspendSessionHolder.getSecurityContext(session)
+
+        context.authentication = auth
+        session.attributes[DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME] = context
+
+        return session.changeSessionId().awaitSingle().let {} // do nothing
     }
 
-    fun passwordUpdate(request: PasswordUpdateRequest): Mono<Void> {
-        return sessionHolder.userInfo()
-            .flatMap {
-                authManager.authenticate(UsernamePasswordAuthenticationToken(it.username, request.beforePassword))
-            }
-            .switchIfEmpty(Mono.error(CustomException(ErrorCode.INVALID_CREDENTIALS)))
-            .then(sessionHolder.me())
-            .findUser(userRepository)
-            .flatMap {
-                userRepository.save(it.copy(password = passwordEncoder.encode(request.afterPassword)))
-            }
-            .then(sessionHolder.getWebSession())
-            .flatMap { it.invalidate() }
-            .then()
+    suspend fun passwordUpdate(request: PasswordUpdateRequest) {
+        val info = suspendSessionHolder.userInfo()
+        authManager.authenticate(UsernamePasswordAuthenticationToken(info.username, request.beforePassword))
+            .awaitSingleOrNull() ?: throw CustomException(ErrorCode.INVALID_CREDENTIALS)
+
+        coroutineUserRepository.save(
+            suspendSessionHolder.me(coroutineUserRepository)
+                .copy(password = passwordEncoder.encode(request.afterPassword))
+        )
+
+        suspendSessionHolder.getWebSession().invalidate().awaitSingle()
     }
 
-    fun resign(webSession: WebSession): Mono<Void> {
-        return sessionHolder
-            .me()
-            .findUser(userRepository)
-            .publishOn(Schedulers.boundedElastic())
-            .doOnNext { verifyCodeRepository.deleteById(it.id!!) }
-            .flatMap { userRepository.delete(it) }
-            .then(Mono.defer { webSession.invalidate() })
+    suspend fun resign() {
+        val user = suspendSessionHolder.me(coroutineUserRepository)
+        withContext(Dispatchers.IO) {
+            verifyCodeRepository.deleteById(user.id!!)
+        }
+
+        coroutineUserRepository.save(user.copy(state = UserState.DELETED))
+        suspendSessionHolder.getWebSession().invalidate().awaitSingle()
     }
 
-    fun verifyEmail(code: String): Mono<Void> {
-        return sessionHolder.me()
-            .publishOn(Schedulers.boundedElastic())
-            .map { verifyCodeRepository.findById(it) } // fetch
-            .flatMap { Mono.justOrEmpty(it.getOrNull()) } // null check logic
-            .switchIfEmpty(Mono.error(CustomException(ErrorCode.ALREADY_VERIFIED)))
-            .filter { it.code == code }
-            .switchIfEmpty(Mono.error(CustomException(ErrorCode.INVALID_VERIFY_CODE)))
-
-            .flatMap { item ->
-                userRepository.findById(item.userId)
-                    .map { it.copy(state = UserState.ACTIVE) }
-                    .flatMap { userRepository.save(it) }
-                    .zipWhen {
-                        userDetailsService.findByUsername(it.email)
-                            .map { principal ->
-                                UsernamePasswordAuthenticationToken(
-                                    principal,
-                                    null,
-                                    principal.authorities
-                                )
-                            }
-                    }
-                    .flatMap {
-                        authenticate(it.t2).thenReturn(it.t1)
-                    }
-                    .publishOn(Schedulers.boundedElastic())
-                    .doOnNext { verifyCodeRepository.delete(item) }
-                    .then()
-            }
+    private suspend fun createPreAuthorizedToken(email: String): Authentication {
+        return userDetailsService.findByUsername(email).awaitSingle()
+            .let { UsernamePasswordAuthenticationToken(it, null, it.authorities) }
     }
 
-    fun resendVerifyCode(): Mono<Void> {
-        return sessionHolder.me()
-            .findUser(userRepository)
-            .filter { it.state == UserState.CREATED }
-            .switchIfEmpty(Mono.error(CustomException(ErrorCode.ALREADY_VERIFIED)))
+    suspend fun verifyEmail(code: String) {
+        val me = suspendSessionHolder.me()
+        val item = withContext(Dispatchers.IO) {
+            verifyCodeRepository.findByIdOrNull(me)
+        } ?: throw CustomException(ErrorCode.ALREADY_VERIFIED)
 
-            .publishOn(Schedulers.boundedElastic())
-            .doOnNext { verifyCodeRepository.deleteById(it.id!!) } // if exists
+        if (item.code != code) throw CustomException(ErrorCode.INVALID_VERIFY_CODE)
 
-            .flatMap { createVerifyCode(it) }
-            .then()
+        val saved = coroutineUserRepository.save(
+            coroutineUserRepository.findById(item.userId)!!.copy(state = UserState.ACTIVE)
+        ) // update user
+
+        val newAuthentication = createPreAuthorizedToken(saved.email)
+        updateSessionWithAuthenticate(newAuthentication)
+
+        return withContext(Dispatchers.IO) { verifyCodeRepository.delete(item) }
+    }
+
+    suspend fun resendVerifyCode() {
+        val me = suspendSessionHolder.me(coroutineUserRepository)
+
+        if (me.state == UserState.ACTIVE)
+            throw CustomException(ErrorCode.ALREADY_VERIFIED)
+
+        return withContext(Dispatchers.IO) {
+            verifyCodeRepository.deleteById(me.id!!)
+            createVerifyCode(me)
+        }
     }
 }
