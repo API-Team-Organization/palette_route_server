@@ -5,7 +5,8 @@ import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseCode
 import com.teamapi.palette.response.exception.CustomException
-import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.http.MediaType
 import org.springframework.http.server.reactive.ServerHttpResponse
@@ -22,6 +23,7 @@ import java.net.URLDecoder
 class SessionExceptionFilter(
     private val objectMapper: ObjectMapper
 ) : CoWebFilter(), Ordered {
+    private val log = LoggerFactory.getLogger(SessionExceptionFilter::class.java)
     override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE
     override suspend fun filter(exchange: ServerWebExchange, chain: CoWebFilterChain) {
         val caught = runCatching {
@@ -30,21 +32,29 @@ class SessionExceptionFilter(
 
         if (caught.isFailure) {
             val e = caught.exceptionOrNull()
-            if (e is CustomException) {
-                return exchange.response.writeJson(e.responseCode, *e.formats)
-            } else if (e is NoResourceFoundException) {
-                val reason = e.reason!!
-                val f = reason.indexOfLast { i -> i == ' ' }
-                return exchange.response.writeJson(
-                    ErrorCode.ENDPOINT_NOT_FOUND,
-                    URLDecoder.decode(reason.substring(f + 1, reason.length - 1), charset("utf-8"))
-                )
-            } else if (e is BadCredentialsException) {
-                e.printStackTrace()
-                return exchange.response.writeJson(ErrorCode.INVALID_CREDENTIALS)
-            } else if (e is Exception) {
-                e.printStackTrace()
-                return exchange.response.writeJson(ErrorCode.INTERNAL_SERVER_EXCEPTION)
+            when (e) {
+                is CustomException -> {
+                    return exchange.response.writeJson(e.responseCode, *e.formats)
+                }
+
+                is NoResourceFoundException -> {
+                    val reason = e.reason!!
+                    val f = reason.indexOfLast { i -> i == ' ' }
+                    return exchange.response.writeJson(
+                        ErrorCode.ENDPOINT_NOT_FOUND,
+                        URLDecoder.decode(reason.substring(f + 1, reason.length - 1), charset("utf-8"))
+                    )
+                }
+
+                is BadCredentialsException -> {
+                    e.printStackTrace()
+                    return exchange.response.writeJson(ErrorCode.INVALID_CREDENTIALS)
+                }
+
+                is Exception -> {
+                    log.error("WTFF", e)
+                    return exchange.response.writeJson(ErrorCode.INTERNAL_SERVER_EXCEPTION)
+                }
             }
         }
     }
@@ -63,6 +73,6 @@ class SessionExceptionFilter(
                     )
                 )
             )
-        ).awaitSingle()
+        ).awaitSingleOrNull()
     }
 }
