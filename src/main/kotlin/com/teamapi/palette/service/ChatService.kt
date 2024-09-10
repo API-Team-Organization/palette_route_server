@@ -8,14 +8,14 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.teamapi.palette.dto.chat.AzureExceptionResponse
 import com.teamapi.palette.dto.chat.ChatResponse
 import com.teamapi.palette.dto.chat.ChatUpdateResponse
-import com.teamapi.palette.dto.chat.CreateChatRequest
 import com.teamapi.palette.entity.Chat
-import com.teamapi.palette.repository.ChatRepository
 import com.teamapi.palette.repository.RoomRepository
+import com.teamapi.palette.repository.chat.ChatRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.util.validateUser
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -30,33 +30,53 @@ class ChatService(
     private val mapper: ObjectMapper
 ) {
     private val log = LoggerFactory.getLogger(ChatService::class.java)
-    fun createChat(request: CreateChatRequest): Mono<ChatUpdateResponse> {
-        return roomRepository.findById(request.roomId)
+
+    fun justMakeChat(roomId: Long, message: String): Mono<Void> {
+        return roomRepository.findById(roomId)
+            .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
+            .validateUser(sessionHolder)
+            .then(sessionHolder.me())
+            .flatMap {
+                chatRepository.save(
+                    Chat(
+                        message = message,
+                        datetime = LocalDateTime.now(),
+                        roomId = roomId,
+                        userId = it,
+                        isAi = false
+                    )
+                )
+            }
+            .then()
+    }
+
+    fun createChat(roomId: Long, message: String): Mono<ChatUpdateResponse> {
+        return roomRepository.findById(roomId)
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
             .validateUser(sessionHolder)
 
-            .then(createUserReturn(request.message)).flatMapMany {
-                Flux.zip(Mono.just(it), draw(request.message), sessionHolder.me())
+            .then(createUserReturn(message)).flatMapMany {
+                Flux.zip(Mono.just(it), draw(message), sessionHolder.me())
             }.flatMap {
                 chatRepository.saveAll(
                     listOf(
                         Chat(
-                            message = request.message,
+                            message = message,
                             datetime = LocalDateTime.now(),
-                            roomId = request.roomId,
+                            roomId = roomId,
                             userId = it.t3,
                             isAi = false
                         ), Chat(
                             message = it.t2.data[0].url,
                             datetime = LocalDateTime.now(),
                             resource = "IMAGE",
-                            roomId = request.roomId,
+                            roomId = roomId,
                             userId = it.t3,
                             isAi = true
                         ), Chat(
                             message = it.t1.choices[0].message.content,
                             datetime = LocalDateTime.now(),
-                            roomId = request.roomId,
+                            roomId = roomId,
                             userId = it.t3,
                             isAi = true
                         )
@@ -69,13 +89,17 @@ class ChatService(
             }.collectList().map { ChatUpdateResponse(it) }
     }
 
-    fun getChatList(roomId: Long): Mono<List<ChatResponse>> {
+    fun getChatList(roomId: Long, pageable: Pageable): Mono<List<ChatResponse>> {
         return roomRepository.findById(roomId)
             .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
             .validateUser(sessionHolder)
 
-            .flatMapMany { chatRepository.findByRoomId(it.id!!) }
-            .map { ChatResponse(it.id!!, it.message, it.datetime, it.roomId, it.userId, it.isAi, it.resource) }
+            .flatMapMany {
+                chatRepository.findAllByRoomIdIsOrderByDatetimeDesc(it.id!!, pageable)
+            }
+            .map {
+                ChatResponse(it.id!!, it.message, it.datetime, it.roomId, it.userId, it.isAi, it.resource)
+            }
             .collectList()
     }
 
