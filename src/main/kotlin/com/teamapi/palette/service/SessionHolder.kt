@@ -1,5 +1,11 @@
 package com.teamapi.palette.service
 
+import com.teamapi.palette.entity.User
+import com.teamapi.palette.repository.UserRepository
+import com.teamapi.palette.response.ErrorCode
+import com.teamapi.palette.response.exception.CustomException
+import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextImpl
@@ -12,34 +18,35 @@ import reactor.core.publisher.Mono
 
 @Component
 class SessionHolder {
-    private fun getServerWebExchange(): Mono<ServerWebExchange> {
+    private suspend fun getServerWebExchange(): ServerWebExchange {
         return Mono.deferContextual {
             Mono.just(it.get(ServerWebExchange::class.java))
-        }
+        }.awaitSingle()
     }
 
-    fun getWebSession(): Mono<WebSession> {
-        return getServerWebExchange()
-            .flatMap { exchange: ServerWebExchange -> exchange.session }
+    suspend fun getWebSession(): WebSession {
+        return getServerWebExchange().session.awaitSingle()
     }
 
-    fun getSecurityContext(): Mono<SecurityContext> {
-        return getWebSession()
-            .flatMap { session: WebSession ->
-                ReactiveSecurityContextHolder.getContext()
-                    .switchIfEmpty(Mono.fromSupplier {
-                        SecurityContextImpl().also { session.attributes[DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME] = it }
-                    })
+    suspend fun getSecurityContext(sessionOrNull: WebSession? = null): SecurityContext {
+        val session = sessionOrNull ?: getWebSession()
+        val context = ReactiveSecurityContextHolder.getContext().awaitSingleOrNull()
+            ?: SecurityContextImpl().also {
+                session.attributes[DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME] = it
             }
+        return context
     }
 
-    fun userInfo(): Mono<UserDetails> {
-        return getSecurityContext()
-            .map { it.authentication.principal }
-            .cast(UserDetails::class.java)
+    suspend fun userInfo(): UserDetails {
+        return getSecurityContext().authentication.principal as UserDetails
     }
 
-    fun me(): Mono<Long> {
-        return userInfo().map { it.username.toLong() }
+    suspend fun me(): Long {
+        return userInfo().username.toLong()
+    }
+
+    suspend fun me(repository: UserRepository): User {
+        return repository.findById(userInfo().username.toLong())
+            ?: throw CustomException(ErrorCode.USER_NOT_FOUND)
     }
 }

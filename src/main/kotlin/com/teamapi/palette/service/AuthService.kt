@@ -6,7 +6,7 @@ import com.teamapi.palette.entity.User
 import com.teamapi.palette.entity.VerifyCode
 import com.teamapi.palette.entity.consts.UserState
 import com.teamapi.palette.extern.MailVerifyProvider
-import com.teamapi.palette.repository.SuspendUserRepository
+import com.teamapi.palette.repository.UserRepository
 import com.teamapi.palette.repository.VerifyCodeRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
@@ -25,12 +25,12 @@ import org.springframework.stereotype.Service
 
 @Service
 class AuthService(
-    private val coroutineUserRepository: SuspendUserRepository,
+    private val coroutineUserRepository: UserRepository,
     private val userDetailsService: ReactiveUserDetailsService,
     private val verifyCodeRepository: VerifyCodeRepository,
     private val mailVerifyProvider: MailVerifyProvider,
     private val passwordEncoder: PasswordEncoder,
-    private val suspendSessionHolder: SuspendSessionHolder,
+    private val sessionHolder: SessionHolder,
     private val authManager: ReactiveAuthenticationManager,
 ) {
     suspend fun register(request: RegisterRequest) {
@@ -64,8 +64,8 @@ class AuthService(
 
     private suspend fun updateSessionWithAuthenticate(auth: Authentication) {
         println(auth)
-        val session = suspendSessionHolder.getWebSession()
-        val context = suspendSessionHolder.getSecurityContext(session)
+        val session = sessionHolder.getWebSession()
+        val context = sessionHolder.getSecurityContext(session)
 
         context.authentication = auth
         session.attributes[DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME] = context
@@ -74,26 +74,26 @@ class AuthService(
     }
 
     suspend fun passwordUpdate(request: PasswordUpdateRequest) {
-        val info = suspendSessionHolder.userInfo()
+        val info = sessionHolder.userInfo()
         authManager.authenticate(UsernamePasswordAuthenticationToken(info.username, request.beforePassword))
             .awaitSingleOrNull() ?: throw CustomException(ErrorCode.INVALID_CREDENTIALS)
 
         coroutineUserRepository.save(
-            suspendSessionHolder.me(coroutineUserRepository)
+            sessionHolder.me(coroutineUserRepository)
                 .copy(password = passwordEncoder.encode(request.afterPassword))
         )
 
-        suspendSessionHolder.getWebSession().invalidate().awaitSingle()
+        sessionHolder.getWebSession().invalidate().awaitSingle()
     }
 
     suspend fun resign() {
-        val user = suspendSessionHolder.me(coroutineUserRepository)
+        val user = sessionHolder.me(coroutineUserRepository)
         withContext(Dispatchers.IO) {
             verifyCodeRepository.deleteById(user.id!!)
         }
 
         coroutineUserRepository.save(user.copy(state = UserState.DELETED))
-        suspendSessionHolder.getWebSession().invalidate().awaitSingle()
+        sessionHolder.getWebSession().invalidate().awaitSingle()
     }
 
     private suspend fun createPreAuthorizedToken(email: String): Authentication {
@@ -102,7 +102,7 @@ class AuthService(
     }
 
     suspend fun verifyEmail(code: String) {
-        val me = suspendSessionHolder.me()
+        val me = sessionHolder.me()
         val item = withContext(Dispatchers.IO) {
             verifyCodeRepository.findByIdOrNull(me)
         } ?: throw CustomException(ErrorCode.ALREADY_VERIFIED)
@@ -120,7 +120,7 @@ class AuthService(
     }
 
     suspend fun resendVerifyCode() {
-        val me = suspendSessionHolder.me(coroutineUserRepository)
+        val me = sessionHolder.me(coroutineUserRepository)
 
         if (me.state == UserState.ACTIVE)
             throw CustomException(ErrorCode.ALREADY_VERIFIED)

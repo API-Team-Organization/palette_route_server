@@ -13,7 +13,6 @@ import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.repository.chat.ChatRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import com.teamapi.palette.util.validateUser
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -29,7 +28,7 @@ import java.time.LocalDateTime
 @Service
 class ChatService(
     private val chatRepository: ChatRepository,
-    private val sessionHolder: SuspendSessionHolder,
+    private val sessionHolder: SessionHolder,
     private val roomRepository: RoomRepository,
     private val azure: OpenAIAsyncClient,
     private val mapper: ObjectMapper

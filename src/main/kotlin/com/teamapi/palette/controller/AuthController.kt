@@ -9,10 +9,10 @@ import com.teamapi.palette.response.Response
 import com.teamapi.palette.service.AuthService
 import com.teamapi.palette.service.SessionHolder
 import jakarta.validation.Valid
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.WebSession
-import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/auth")
@@ -48,9 +48,10 @@ class AuthController(
 
     @PostMapping("/logout")
     @SwaggerRequireAuthorize
-    fun logout() = sessionHolder.getWebSession()
-        .flatMap { it.invalidate() }
-        .thenReturn(Response.ok("로그아웃 성공"))
+    suspend fun logout(): ResponseEntity<Response> {
+        sessionHolder.getWebSession().invalidate().awaitSingle()
+        return Response.ok("로그아웃 성공")
+    }
 
     @GetMapping("/session")
     @SwaggerRequireAuthorize

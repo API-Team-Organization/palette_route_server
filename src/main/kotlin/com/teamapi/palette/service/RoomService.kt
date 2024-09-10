@@ -6,13 +6,12 @@ import com.teamapi.palette.entity.Room
 import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import com.teamapi.palette.util.validateUser
 import org.springframework.stereotype.Service
 
 @Service
 class RoomService(
     private val roomRepository: RoomRepository,
-    private val sessionHolder: SuspendSessionHolder
+    private val sessionHolder: SessionHolder
 ) {
     suspend fun createRoom(): RoomResponse {
         val room = roomRepository.save(Room(userId = sessionHolder.me()))
