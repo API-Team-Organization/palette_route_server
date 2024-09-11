@@ -28,7 +28,7 @@ class ChatController(
         return ResponseBody.ok("답변 생성 성공", data)
     }
 
-    @PageableAsQueryParam
+    @GetMapping("/{roomId}")
     suspend fun getChatList(
         @PathVariable("roomId") roomId: Long,
         @Parameter(hidden = true) pageRequest: DefaultPageRequest
@@ -40,7 +40,13 @@ class ChatController(
         return ResponseBody.ok("채팅 조회 성공", data)
     }
 
+
+    @PageableAsQueryParam
     @GetMapping("/my-image")
-    fun getMyImage(@RequestParam pageNumber: Int, @RequestParam pageSize: Int) = chatService
-        .getMyImage(pageNumber, pageSize)
+    suspend fun getMyImage(
+        @Parameter(hidden = true) pageRequest: DefaultPageRequest
+    ): ResponseEntity<ResponseBody<List<String>>> {
+        val data = chatService.getMyImage(pageRequest.page, pageRequest.size)
+        return ResponseBody.ok("이미지 리스트 조회 완료", data)
+    }
 }

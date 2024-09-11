@@ -13,13 +13,13 @@ import com.teamapi.palette.repository.ChatRepository
 import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import org.springframework.ai.image.ImageResponse
-import org.springframework.data.domain.*
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.util.function.component1
@@ -41,13 +41,15 @@ class ChatService(
         room.validateUser(sessionHolder)
 
         val userId = sessionHolder.me()
-        chatRepository.save(Chat(
-            message = message,
-            datetime = LocalDateTime.now(),
-            roomId = roomId,
-            userId = userId,
-            isAi = false
-        ))
+        chatRepository.save(
+            Chat(
+                message = message,
+                datetime = LocalDateTime.now(),
+                roomId = roomId,
+                userId = userId,
+                isAi = false
+            )
+        )
         val (chat, image) = Mono.zip(createUserReturn(message), draw(message)).awaitSingle()
 
         val stamp = LocalDateTime.now()
@@ -114,7 +116,7 @@ class ChatService(
         )
     )
 
-//    fun createPrompt(text: String) = chatCompletion(
+    //    fun createPrompt(text: String) = chatCompletion(
 //        ChatCompletionsOptions(
 //            listOf(
 //                ChatRequestSystemMessage(
@@ -132,17 +134,13 @@ class ChatService(
 //            )
 //        )
 //    )
-    fun getMyImage(pageNumber: Int, pageSize: Int): Mono<PageImpl<String>> {
+    suspend fun getMyImage(pageNumber: Int, pageSize: Int): List<String> {
         val page = PageRequest.of(pageNumber, pageSize)
-        return sessionHolder
-            .me()
-            .flatMap { userId ->
-                chatRepository.findByIsAiAndUserId(true, userId, page)
-                    .map { it.resource }
-                    .collectList()
-                    .zipWith(chatRepository.count())
-                    .map { p -> PageImpl(p.t1, page, p.t2) }
-            }
+        val userId = sessionHolder.me()
+
+        return chatRepository.findChatByIsAiIsAndUserIdIsAndResourceIs(true, userId, "IMAGE", page)
+            .map { it.message }
+            .toList()
     }
 
     private fun chatCompletion(options: ChatCompletionsOptions) = azure.getChatCompletions(

@@ -9,5 +9,7 @@ import org.springframework.stereotype.Repository
 @Repository
 interface ChatRepository : CoroutineCrudRepository<Chat, Long> {
     suspend fun findAllByRoomIdIsOrderByDatetimeDesc(roomId: Long, pageable: Pageable): Flow<Chat>
-    fun findByIsAiAndUserId(isAi: Boolean, userId: Long, pageable: Pageable): Flux<Chat>
+
+    @Suppress("SpringDataMethodInconsistencyInspection")
+    suspend fun findChatByIsAiIsAndUserIdIsAndResourceIs(isAi: Boolean, userId: Long, resource: String, pageable: Pageable): Flow<Chat>
 }
