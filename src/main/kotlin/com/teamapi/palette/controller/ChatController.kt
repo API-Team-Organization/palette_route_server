@@ -22,4 +22,8 @@ class ChatController(
         .map {
             ResponseBody.ok("채팅 조회 성공", it)
         }
+
+    @GetMapping("/my-image")
+    fun getMyImage(@RequestParam pageNumber: Int, @RequestParam pageSize: Int) = chatService
+        .getMyImage(pageNumber, pageSize)
 }

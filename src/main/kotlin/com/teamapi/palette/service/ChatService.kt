@@ -15,6 +15,9 @@ import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.util.validateUser
+import org.springframework.ai.image.ImageResponse
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -130,6 +133,18 @@ class ChatService(
 //            )
 //        )
 //    )
+    fun getMyImage(pageNumber: Int, pageSize: Int): Mono<PageImpl<String>> {
+        val page = PageRequest.of(pageNumber, pageSize)
+        return sessionHolder
+            .me()
+            .flatMap { userId ->
+                chatRepository.findByIsAiAndUserId(true, userId, page)
+                    .map { it.resource }
+                    .collectList()
+                    .zipWith(chatRepository.count())
+                    .map { p -> PageImpl(p.t1, page, p.t2) }
+            }
+    }
 
     private fun chatCompletion(options: ChatCompletionsOptions) = azure.getChatCompletions(
         "PaletteGPT", options
