@@ -12,12 +12,10 @@ import com.teamapi.palette.repository.ChatRepository
 import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import com.teamapi.palette.ws.actor.WSRoomActor
+import com.teamapi.palette.ws.actor.SinkActor
 import com.teamapi.palette.ws.dto.RoomAction
-import com.teamapi.palette.ws.dto.WSRoomMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -35,11 +33,10 @@ class ChatService(
     private val roomRepository: RoomRepository,
     private val azure: OpenAIAsyncClient,
     private val mapper: ObjectMapper,
-    private val actor: WSRoomActor
+    private val actor: SinkActor
 ) {
     private val log = LoggerFactory.getLogger(ChatService::class.java)
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun createChat(roomId: Long, message: String) {
         val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
@@ -55,7 +52,7 @@ class ChatService(
             )
         )
 
-        actor.emit(WSRoomMessage(roomId, RoomAction.START, myMsg))
+        actor.addChat(roomId, RoomAction.START, myMsg)
 
         CoroutineScope(Dispatchers.Unconfined).async { // ignore
             try {
@@ -67,7 +64,7 @@ class ChatService(
                     userId = userId,
                     isAi = true
                 )
-                actor.emit(WSRoomMessage(roomId, RoomAction.TEXT, textChat))
+                actor.addChat(roomId, RoomAction.TEXT, textChat)
 
                 val image = draw(message).awaitSingle()
                 val stamp = LocalDateTime.now()
@@ -82,8 +79,7 @@ class ChatService(
                         isAi = true
                     )
                 )
-                actor.emit(WSRoomMessage(roomId, RoomAction.IMAGE, imageChat))
-
+                actor.addChat(roomId, RoomAction.IMAGE, imageChat)
                 chatRepository.save(textChat.copy(datetime = stamp.plusSeconds(2))) // late save with delayed time
             } catch (e: CustomException) {
                 val errorChat = Chat(
@@ -95,7 +91,7 @@ class ChatService(
                     isAi = true
                 )
 //                    runBlocking { chatRepository.save(errorChat) } // TODO: Save?
-                actor.emit(WSRoomMessage(roomId, RoomAction.END, errorChat))
+                actor.addChat(roomId, RoomAction.END, errorChat)
                 return@async
             } catch (e: Exception) {
                 val errorChat = Chat(
@@ -107,11 +103,11 @@ class ChatService(
                     isAi = true
                 )
 //                    runBlocking { chatRepository.save(errorChat) } // TODO: Save?
-                actor.emit(WSRoomMessage(roomId, RoomAction.END, errorChat))
+                actor.addChat(roomId, RoomAction.END, errorChat)
                 return@async
             }
 
-            actor.emit(WSRoomMessage(roomId, RoomAction.END, null))
+            actor.addChat(roomId, RoomAction.END, null)
         }.let {
             it.invokeOnCompletion { e ->
                 if (e != null) {
