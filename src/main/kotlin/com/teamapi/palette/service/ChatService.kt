@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
@@ -171,6 +172,14 @@ class ChatService(
 //            )
 //        )
 //    )
+    suspend fun getMyImage(pageNumber: Int, pageSize: Int): List<String> {
+        val page = PageRequest.of(pageNumber, pageSize)
+        val userId = sessionHolder.me()
+
+        return chatRepository.findChatByIsAiIsAndUserIdIsAndResourceIs(true, userId, "IMAGE", page)
+            .map { it.message }
+            .toList()
+    }
 
     private fun chatCompletion(options: ChatCompletionsOptions) = azure.getChatCompletions(
         "PaletteGPT", options
