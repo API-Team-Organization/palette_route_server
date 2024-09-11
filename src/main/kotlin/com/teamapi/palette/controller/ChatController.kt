@@ -28,7 +28,6 @@ class ChatController(
         return ResponseBody.ok("답변 생성 성공", data)
     }
 
-    @GetMapping("/{roomId}")
     @PageableAsQueryParam
     suspend fun getChatList(
         @PathVariable("roomId") roomId: Long,
@@ -40,4 +39,8 @@ class ChatController(
         )
         return ResponseBody.ok("채팅 조회 성공", data)
     }
+
+    @GetMapping("/my-image")
+    fun getMyImage(@RequestParam pageNumber: Int, @RequestParam pageSize: Int) = chatService
+        .getMyImage(pageNumber, pageSize)
 }
