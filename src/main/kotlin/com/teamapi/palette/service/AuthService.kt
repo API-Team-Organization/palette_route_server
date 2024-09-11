@@ -83,7 +83,7 @@ class AuthService(
                 .copy(password = passwordEncoder.encode(request.afterPassword))
         )
 
-        sessionHolder.getWebSession().invalidate().awaitSingle()
+        sessionHolder.getWebSession().invalidate().awaitSingleOrNull()
     }
 
     suspend fun resign() {
