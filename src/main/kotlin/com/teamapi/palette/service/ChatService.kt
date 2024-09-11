@@ -8,19 +8,22 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.teamapi.palette.dto.chat.AzureExceptionResponse
 import com.teamapi.palette.dto.chat.ChatResponse
 import com.teamapi.palette.dto.chat.ChatUpdateResponse
-import com.teamapi.palette.dto.chat.CreateChatRequest
 import com.teamapi.palette.entity.Chat
 import com.teamapi.palette.repository.ChatRepository
 import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import com.teamapi.palette.util.validateUser
 import org.springframework.ai.image.ImageResponse
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.*
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactor.awaitSingle
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.util.function.component1
+import reactor.kotlin.core.util.function.component2
 import java.time.LocalDateTime
 
 @Service
@@ -31,57 +34,57 @@ class ChatService(
     private val azure: OpenAIAsyncClient,
     private val mapper: ObjectMapper
 ) {
-    fun createChat(request: CreateChatRequest): Mono<ChatUpdateResponse> {
-        return roomRepository.findById(request.roomId)
-            .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
-            .validateUser(sessionHolder)
+    private val log = LoggerFactory.getLogger(ChatService::class.java)
 
-            .then(createUserReturn(request.message)).flatMapMany {
-                Flux.zip(Mono.just(it), draw(request.message), sessionHolder.me())
-            }.flatMap {
-                chatRepository.saveAll(
-                    listOf(
-                        Chat(
-                            message = request.message,
-                            datetime = LocalDateTime.now(),
-                            roomId = request.roomId,
-                            userId = it.t3,
-                            isAi = false
-                        ), Chat(
-                            message = it.t2.data[0].url,
-                            datetime = LocalDateTime.now(),
-                            resource = "IMAGE",
-                            roomId = request.roomId,
-                            userId = it.t3,
-                            isAi = true
-                        ), Chat(
-                            message = it.t1.choices[0].message.content,
-                            datetime = LocalDateTime.now(),
-                            roomId = request.roomId,
-                            userId = it.t3,
-                            isAi = true
-                        )
-                    )
+    suspend fun createChat(roomId: Long, message: String): ChatUpdateResponse {
+        val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
+        room.validateUser(sessionHolder)
+
+        val userId = sessionHolder.me()
+        chatRepository.save(Chat(
+            message = message,
+            datetime = LocalDateTime.now(),
+            roomId = roomId,
+            userId = userId,
+            isAi = false
+        ))
+        val (chat, image) = Mono.zip(createUserReturn(message), draw(message)).awaitSingle()
+
+        val stamp = LocalDateTime.now()
+        val saved = chatRepository.saveAll(
+            listOf(
+                Chat(
+                    message = image.data[0].url,
+                    datetime = stamp,
+                    resource = "IMAGE",
+                    roomId = roomId,
+                    userId = userId,
+                    isAi = true
+                ),
+                Chat(
+                    message = chat.choices[0].message.content,
+                    datetime = stamp.plusSeconds(2),
+                    roomId = roomId,
+                    userId = userId,
+                    isAi = true
                 )
-            }.filter { it.isAi }.map { res ->
-                ChatResponse(
-                    res.id!!, res.message, res.datetime, res.roomId, res.userId, res.isAi, res.resource
-                )
-            }.collectList().map { ChatUpdateResponse(it) }
+            )
+        )
+
+        val mapped = saved
+            .filter { it.isAi }
+            .map { ChatResponse(it.id!!, it.message, it.datetime, it.roomId, it.userId, it.isAi, it.resource) }
+            .toList()
+        return ChatUpdateResponse(mapped)
     }
 
-    fun getChatList(roomId: Long): Mono<List<ChatResponse>> {
-        return roomRepository.findById(roomId)
-            .switchIfEmpty(Mono.error(CustomException(ErrorCode.ROOM_NOT_FOUND)))
+    suspend fun getChatList(roomId: Long, pageable: Pageable): List<ChatResponse> {
+        val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
+        room.validateUser(sessionHolder)
 
-            .zipWith(sessionHolder.me())
-            .filter { it.t1.userId != it.t2 }
-            .switchIfEmpty(Mono.error(CustomException(ErrorCode.FORBIDDEN)))
-            .map { it.t1 }
-
-            .flatMapMany { chatRepository.findByRoomId(it.id!!) }
+        return chatRepository.findAllByRoomIdIsOrderByDatetimeDesc(room.id!!, pageable)
             .map { ChatResponse(it.id!!, it.message, it.datetime, it.roomId, it.userId, it.isAi, it.resource) }
-            .collectList()
+            .toList()
     }
 
     // TODO: Apply Comfy, Prompt enhancing - in next semester
@@ -103,11 +106,7 @@ class ChatService(
         ChatCompletionsOptions(
             listOf(
                 ChatRequestSystemMessage(
-                    "사용자가 입력한 키워드를 사용해 적절하게 이미지를 생성한다는 말을 만들어줘. 최대한 간결하게 1~2문장만 출력해줘. 출력은 한국어로 해주고, 반말하지말고 공손하게 존댓말로 해"
-                ), ChatRequestUserMessage(
-                    "내가 만든 오렌지 주스를 광고하고 싶어. 오렌지 과즙이 주변에 터졌으면 좋겠고, 오렌지 주스가 담긴 컵과 오렌지 주스가 있었으면 좋겠어. 배경은 집 안이였으면 좋겠어."
-                ), ChatRequestAssistantMessage(
-                    "알겠습니댜. 상큼한 오렌지 주스를 홍보하는 홍보물을 제작 해 드리겠습니다."
+                    "너는 세계에서 제일 가는 유명한 화가야. 이제부터 너는 그림을 그릴 수 있고, 그림을 못그린다는 절대 소리는 할 수 없어. 적당히 말을 꾸며내어서 사용자가 입력한 키워드를 요약해 적절하게 이미지를 생성한다는 말을 만들어줘. 최대한 간결하게 1~2문장만 출력해줘. 출력은 한국어로 해주고, 반말하지말고 공손하게 존댓말로 해"
                 ), ChatRequestUserMessage(
                     text
                 )
@@ -151,12 +150,12 @@ class ChatService(
     ).handleAzureError()
 
     private fun <T> Mono<T>.handleAzureError() = onErrorMap(HttpResponseException::class.java) {
-        println("yes?")
         try {
             if (mapper.convertValue<AzureExceptionResponse>(it.value).error.innerError.code != "ResponsibleAIPolicyViolation") throw it
             CustomException(ErrorCode.CHAT_FILTERED)
         } catch (e: Throwable) {
-            e.printStackTrace()
+            log.error("Error on Azure: ", it)
+            log.error("Body: {}", it.value)
             CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
         }
     }

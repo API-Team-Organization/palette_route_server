@@ -1,6 +1,7 @@
 package com.teamapi.palette.dto.chat
 
-data class CreateChatRequest(
+import com.fasterxml.jackson.annotation.JsonCreator
+
+data class CreateChatRequest @JsonCreator constructor(
     val message: String,
-    val roomId: Long,
 )

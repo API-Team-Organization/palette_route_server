@@ -1,11 +1,13 @@
 package com.teamapi.palette.repository
 
 import com.teamapi.palette.entity.Chat
+import kotlinx.coroutines.flow.Flow
 import org.springframework.data.domain.Pageable
-import org.springframework.data.r2dbc.repository.R2dbcRepository
-import reactor.core.publisher.Flux
+import org.springframework.data.repository.kotlin.CoroutineCrudRepository
+import org.springframework.stereotype.Repository
 
-interface ChatRepository : R2dbcRepository<Chat, Long> {
-    fun findByRoomId(roomId: Long): Flux<Chat>
+@Repository
+interface ChatRepository : CoroutineCrudRepository<Chat, Long> {
+    suspend fun findAllByRoomIdIsOrderByDatetimeDesc(roomId: Long, pageable: Pageable): Flow<Chat>
     fun findByIsAiAndUserId(isAi: Boolean, userId: Long, pageable: Pageable): Flux<Chat>
 }

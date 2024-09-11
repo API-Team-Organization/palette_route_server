@@ -3,11 +3,13 @@ package com.teamapi.palette.extern
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import jakarta.mail.MessagingException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 import org.springframework.mail.MailException
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Component
-import reactor.core.publisher.Mono
 import kotlin.random.Random
 import kotlin.random.nextInt
 
@@ -94,30 +96,37 @@ class MailVerifyProvider(private val mailSender: JavaMailSender) {
     </div>
 </body>
 </html>"""
+        private val log = LoggerFactory.getLogger(MailVerifyProvider::class.java)
     }
 
-    fun sendEmail(toMail: String, code: String): Mono<Void> {
-        return Mono.just(mailSender.createMimeMessage())
-            .map {
-                MimeMessageHelper(it, false, "UTF-8")
+    suspend fun sendEmail(toMail: String, code: String) {
+        withContext(Dispatchers.IO) {
+            val caught = runCatching {
+                val mime = mailSender.createMimeMessage()
+                MimeMessageHelper(mime, false, "UTF-8")
                     .apply {
                         setTo(toMail)
                         setSubject("[Palette] 이메일 인증 코드")
                         setText(MAIL_TEMPLATE.replace("{{VERIFICATION_CODE}}", code), true)
                     }
-                it
+
+                mailSender.send(mime)
             }
-            .map {
-                mailSender.send(it)
+
+            if (caught.isFailure) {
+                val e = caught.exceptionOrNull()
+
+                if (e is MessagingException) {
+                    log.error("error while sending mail", e)
+                    throw CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
+                }
+                if (e is MailException) {
+                    log.error("error while sending mail", e)
+                    throw CustomException(ErrorCode.MAIL_SEND_FAILED)
+                }
             }
-            .onErrorMap(MessagingException::class.java) {
-                CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
-            }
-            .onErrorMap(MailException::class.java) {
-                it.printStackTrace()
-                CustomException(ErrorCode.MAIL_SEND_FAILED)
-            }
-            .then()
+
+        }
     }
 
     fun createVerifyCode() = List(6) { Random.nextInt(0..9) }.joinToString("")

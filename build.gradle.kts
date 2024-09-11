@@ -51,6 +51,8 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.springdoc:springdoc-openapi-starter-webflux-api:2.5.0")
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0")
+    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 }
 dependencyManagement {
     imports {

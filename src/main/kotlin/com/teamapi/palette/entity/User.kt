@@ -3,8 +3,10 @@ package com.teamapi.palette.entity
 import com.teamapi.palette.entity.consts.UserState
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
+import org.springframework.data.relational.core.mapping.Table
 import java.time.LocalDate
 
+@Table
 data class User(
     val email: String,
     val password: String, // hashed

@@ -8,6 +8,8 @@ class ErrorResponse(code: Int, message: String, @Suppress("unused") val kind: St
     companion object {
         fun of(code: ResponseCode, vararg formats: Any?): ResponseEntity<ErrorResponse> =
             ResponseEntity.status(code.statusCode)
-                .body(ErrorResponse(code.statusCode.value(), code.message.format(*formats), code.getName()))
+                .body(ofRaw(code, *formats))
+        fun ofRaw(code: ResponseCode, vararg formats: Any?): ErrorResponse
+        = ErrorResponse(code.statusCode.value(), code.message.format(*formats), code.getName())
     }
 }

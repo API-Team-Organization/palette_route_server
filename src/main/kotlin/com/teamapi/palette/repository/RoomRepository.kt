@@ -1,10 +1,11 @@
 package com.teamapi.palette.repository
 
 import com.teamapi.palette.entity.Room
-import org.springframework.data.r2dbc.repository.R2dbcRepository
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
+import kotlinx.coroutines.flow.Flow
+import org.springframework.data.repository.kotlin.CoroutineCrudRepository
+import org.springframework.stereotype.Repository
 
-interface RoomRepository : R2dbcRepository<Room, Long> {
-    fun findByUserId(userId: Long): Flux<Room>
+@Repository
+interface RoomRepository : CoroutineCrudRepository<Room, Long> {
+    suspend fun findByUserId(userId: Long): Flow<Room>
 }

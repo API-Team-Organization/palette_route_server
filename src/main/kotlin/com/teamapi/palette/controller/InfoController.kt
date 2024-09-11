@@ -1,27 +1,31 @@
 package com.teamapi.palette.controller
 
+import com.teamapi.palette.annotations.SwaggerRequireAuthorize
 import com.teamapi.palette.dto.user.UpdateRequest
+import com.teamapi.palette.dto.user.UserResponse
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
 import com.teamapi.palette.service.UserService
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/info")
+@SwaggerRequireAuthorize
 class InfoController(
     private val userService: UserService
 ) {
     @GetMapping("/me")
-    fun myInfo() = userService.me()
-        .map { ResponseBody.ok("유저 조회 성공", it) }
+    suspend fun myInfo(): ResponseEntity<ResponseBody<UserResponse>> {
+        val data = userService.me()
+        return ResponseBody.ok("유저 조회 성공", data)
+    }
 
     @PatchMapping("/me")
-    fun updateInfo(
+    suspend fun updateInfo(
         @RequestBody request: UpdateRequest
-    ) = userService.update(request)
-        .thenReturn(Response.ok("유저 수정 성공"))
+    ): ResponseEntity<Response> {
+        userService.update(request)
+        return Response.ok("유저 수정 성공")
+    }
 }
