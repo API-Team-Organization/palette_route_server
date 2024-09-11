@@ -9,7 +9,7 @@ import com.teamapi.palette.response.Response
 import com.teamapi.palette.service.AuthService
 import com.teamapi.palette.service.SessionHolder
 import jakarta.validation.Valid
-import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.WebSession
@@ -49,7 +49,7 @@ class AuthController(
     @PostMapping("/logout")
     @SwaggerRequireAuthorize
     suspend fun logout(): ResponseEntity<Response> {
-        sessionHolder.getWebSession().invalidate().awaitSingle()
+        sessionHolder.getWebSession().invalidate().awaitSingleOrNull()
         return Response.ok("로그아웃 성공")
     }
 

@@ -74,8 +74,8 @@ class AuthService(
     }
 
     suspend fun passwordUpdate(request: PasswordUpdateRequest) {
-        val info = sessionHolder.userInfo()
-        authManager.authenticate(UsernamePasswordAuthenticationToken(info.username, request.beforePassword))
+        val info = sessionHolder.me(coroutineUserRepository)
+        authManager.authenticate(UsernamePasswordAuthenticationToken(info.email, request.beforePassword))
             .awaitSingleOrNull() ?: throw CustomException(ErrorCode.INVALID_CREDENTIALS)
 
         coroutineUserRepository.save(
@@ -83,7 +83,7 @@ class AuthService(
                 .copy(password = passwordEncoder.encode(request.afterPassword))
         )
 
-        sessionHolder.getWebSession().invalidate().awaitSingle()
+        sessionHolder.getWebSession().invalidate().awaitSingleOrNull()
     }
 
     suspend fun resign() {
