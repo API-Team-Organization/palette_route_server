@@ -63,7 +63,6 @@ class AuthService(
     }
 
     private suspend fun updateSessionWithAuthenticate(auth: Authentication) {
-        println(auth)
         val session = sessionHolder.getWebSession()
         val context = sessionHolder.getSecurityContext(session)
 
