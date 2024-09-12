@@ -29,7 +29,7 @@ class WSRoomActor(
                         if (msg.roomId != roomHooked.id) continue // ignore
 
                         delegateActor.send(
-                            DelegateMessage.SendMessage(ChatMessage(msg.action, msg.chat?.toDto()))
+                            DelegateMessage.SendMessage(ChatMessage.of(msg.action, msg.chat?.toDto()))
                         )
                     }
                 }

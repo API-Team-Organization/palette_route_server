@@ -1,5 +1,6 @@
 package com.teamapi.palette.ws.dto.res
 
-abstract class BaseResponseMessage(
-    val type: MessageType
+data class BaseResponseMessage<T>(
+    val type: MessageType,
+    val data: T
 )

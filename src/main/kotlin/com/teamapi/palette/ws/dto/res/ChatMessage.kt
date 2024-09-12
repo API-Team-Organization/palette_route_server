@@ -6,4 +6,11 @@ import com.teamapi.palette.ws.dto.RoomAction
 data class ChatMessage(
     val action: RoomAction,
     val message: ChatResponse?
-) : BaseResponseMessage(MessageType.NEW_CHAT)
+) {
+    companion object {
+        fun of(action: RoomAction, message: ChatResponse?) = BaseResponseMessage(
+            MessageType.NEW_CHAT,
+            ChatMessage(action, message)
+        )
+    }
+}
