@@ -5,7 +5,7 @@ import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
 import java.time.LocalDateTime
 
-@Table
+@Table("tbl_chat")
 data class Chat(
     @Id
     val id: Long? = null,

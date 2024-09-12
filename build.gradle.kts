@@ -8,8 +8,6 @@ plugins {
     id("org.jooq.jooq-codegen-gradle") version "3.19.11"
 }
 
-apply(from = "secrets.gradle.kts")
-
 val springCloudAzureVersion by extra("5.13.0")
 val springAiVersion by extra("1.0.0-M1")
 
@@ -59,7 +57,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 
     implementation("org.jooq:jooq:3.19.11")
-    implementation("org.jooq:jooq-meta:3.19.11")
+    jooqCodegen("org.jooq:jooq-meta:3.19.11")
+    jooqCodegen("org.jooq:jooq-meta-extensions:3.19.11")
     implementation("org.jooq:jooq-codegen:3.19.11")
     implementation("org.jooq:jooq-kotlin:3.19.11")
     implementation("org.jooq:jooq-kotlin-coroutines:3.19.11")
@@ -71,16 +70,19 @@ tasks.withType<KotlinCompile> {
 
 jooq {
     configuration {
-        jdbc {
-            driver = "org.mariadb.jdbc.Driver"
-            url = "jdbc:mariadb://${extra["DB_URL"]}:3306"
-            user = "${extra["MARIA_USERNAME"]}"
-            password = "${extra["MARIA_PASSWORD"]}"
-        }
         generator {
             database {
-                name = "org.jooq.meta.mariadb.MariaDBDatabase"
-                inputSchema = "palette"
+                name = "org.jooq.meta.extensions.ddl.DDLDatabase"
+                properties {
+                    property {
+                        key = "scripts"
+                        value = "src/main/resources/sql/table.sql"
+                    }
+                    property {
+                        key = "defaultNameCase"
+                        value = "lower"
+                    }
+                }
             }
             generate {}
             target {

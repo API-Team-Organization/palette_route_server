@@ -41,4 +41,3 @@ out/
 
 src/main/resources/application.yml
 .DS_Store
-secrets.gradle.kts
