@@ -6,7 +6,7 @@ import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
 import java.time.LocalDate
 
-@Table
+@Table("tbl_user")
 data class User(
     val email: String,
     val password: String, // hashed
