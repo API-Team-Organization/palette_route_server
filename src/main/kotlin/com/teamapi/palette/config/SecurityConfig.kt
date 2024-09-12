@@ -52,7 +52,6 @@ class SecurityConfig(private val objectMapper: ObjectMapper) {
                     .pathMatchers("/auth/login", "/auth/register").permitAll()
                     .pathMatchers("/v3/api-docs/**", "/external/**", "swagger").permitAll()
                     .pathMatchers("/auth/resign", "/auth/session", "/auth/logout").authenticated()
-                    .pathMatchers("/ws/**").permitAll() // WS HACKED (i hate the web standard) (WHY NO HEADER????)
                     .pathMatchers("/auth/verify", "/auth/resend").hasRole(UserState.CREATED.name)
                     .anyExchange().hasRole(UserState.ACTIVE.name)
             }
