@@ -6,8 +6,6 @@ import com.teamapi.palette.entity.Room
 import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
 import org.springframework.stereotype.Service
 
 @Service
@@ -17,13 +15,11 @@ class RoomService(
 ) {
     suspend fun createRoom(): RoomResponse {
         val room = roomRepository.save(Room(userId = sessionHolder.me()))
-        return RoomResponse(room.id!!, room.title ?: "")
+        return RoomResponse(room.id!!, room.title, null)
     }
 
     suspend fun getRoomList(): List<RoomResponse> {
-        return roomRepository.findByUserId(sessionHolder.me())
-            .map { RoomResponse(it.id!!, it.title ?: "") }
-            .toList()
+        return roomRepository.findRoomByUserId(sessionHolder.me())
     }
 
     suspend fun updateRoomTitle(updateRoomTitleRequest: UpdateRoomTitleRequest) {
