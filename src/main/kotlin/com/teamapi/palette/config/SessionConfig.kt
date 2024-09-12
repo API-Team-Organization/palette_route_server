@@ -19,7 +19,7 @@ class SessionConfig {
             override fun resolveSessionIds(exchange: ServerWebExchange): MutableList<String> {
                 val headers = exchange.request.headers
                 val h = headers.getOrDefault(SESSION_HEADER, headers.getOrEmpty("Sec-WebSocket-Protocol" /* WS Hack */))
-                println(h)
+                println("${exchange.request.path}: using $h sessions")
                 return h
             }
 
