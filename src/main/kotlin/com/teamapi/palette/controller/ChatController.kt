@@ -2,9 +2,9 @@ package com.teamapi.palette.controller
 
 import com.teamapi.palette.annotations.SwaggerRequireAuthorize
 import com.teamapi.palette.dto.chat.ChatResponse
-import com.teamapi.palette.dto.chat.ChatUpdateResponse
 import com.teamapi.palette.dto.chat.CreateChatRequest
 import com.teamapi.palette.dto.default.DefaultPageRequest
+import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
 import com.teamapi.palette.service.ChatService
 import io.swagger.v3.oas.annotations.Parameter
@@ -23,9 +23,9 @@ class ChatController(
     suspend fun createChat(
         @RequestBody request: CreateChatRequest,
         @RequestParam("roomId") roomId: Long
-    ): ResponseEntity<ResponseBody<ChatUpdateResponse>> {
-        val data = chatService.createChat(roomId, request.message)
-        return ResponseBody.ok("답변 생성 성공", data)
+    ): ResponseEntity<Response> {
+        chatService.createChat(roomId, request.message)
+        return Response.ok("답변 요청 성공")
     }
 
     @GetMapping("/{roomId}")

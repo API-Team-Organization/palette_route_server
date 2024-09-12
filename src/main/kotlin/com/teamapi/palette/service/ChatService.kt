@@ -7,13 +7,16 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.teamapi.palette.dto.chat.AzureExceptionResponse
 import com.teamapi.palette.dto.chat.ChatResponse
-import com.teamapi.palette.dto.chat.ChatUpdateResponse
 import com.teamapi.palette.entity.Chat
 import com.teamapi.palette.repository.ChatRepository
 import com.teamapi.palette.repository.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import kotlinx.coroutines.flow.filter
+import com.teamapi.palette.ws.actor.SinkActor
+import com.teamapi.palette.ws.dto.RoomAction
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactor.awaitSingle
@@ -22,8 +25,6 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
-import reactor.kotlin.core.util.function.component1
-import reactor.kotlin.core.util.function.component2
 import java.time.LocalDateTime
 
 @Service
@@ -32,16 +33,17 @@ class ChatService(
     private val sessionHolder: SessionHolder,
     private val roomRepository: RoomRepository,
     private val azure: OpenAIAsyncClient,
-    private val mapper: ObjectMapper
+    private val mapper: ObjectMapper,
+    private val actor: SinkActor
 ) {
     private val log = LoggerFactory.getLogger(ChatService::class.java)
 
-    suspend fun createChat(roomId: Long, message: String): ChatUpdateResponse {
+    suspend fun createChat(roomId: Long, message: String) {
         val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
 
         val userId = sessionHolder.me()
-        chatRepository.save(
+        val myMsg = chatRepository.save(
             Chat(
                 message = message,
                 datetime = LocalDateTime.now(),
@@ -50,34 +52,70 @@ class ChatService(
                 isAi = false
             )
         )
-        val (chat, image) = Mono.zip(createUserReturn(message), draw(message)).awaitSingle()
 
-        val stamp = LocalDateTime.now()
-        val saved = chatRepository.saveAll(
-            listOf(
-                Chat(
-                    message = image.data[0].url,
-                    datetime = stamp,
-                    resource = "IMAGE",
-                    roomId = roomId,
-                    userId = userId,
-                    isAi = true
-                ),
-                Chat(
+        actor.addChat(roomId, RoomAction.START, myMsg)
+
+        CoroutineScope(Dispatchers.Unconfined).async { // ignore
+            try {
+                val chat = createUserReturn(message).awaitSingle()
+                val textChat = Chat(
                     message = chat.choices[0].message.content,
-                    datetime = stamp.plusSeconds(2),
+                    datetime = LocalDateTime.now(),
                     roomId = roomId,
                     userId = userId,
                     isAi = true
                 )
-            )
-        )
+                actor.addChat(roomId, RoomAction.TEXT, textChat)
 
-        val mapped = saved
-            .filter { it.isAi }
-            .map { ChatResponse(it.id!!, it.message, it.datetime, it.roomId, it.userId, it.isAi, it.resource) }
-            .toList()
-        return ChatUpdateResponse(mapped)
+                val image = draw(message).awaitSingle()
+                val stamp = LocalDateTime.now()
+
+                val imageChat = chatRepository.save(
+                    Chat(
+                        message = image.data[0].url,
+                        datetime = stamp,
+                        resource = "IMAGE",
+                        roomId = roomId,
+                        userId = userId,
+                        isAi = true
+                    )
+                )
+                actor.addChat(roomId, RoomAction.IMAGE, imageChat)
+                chatRepository.save(textChat.copy(datetime = stamp.plusSeconds(2))) // late save with delayed time
+            } catch (e: CustomException) {
+                val errorChat = Chat(
+                    id = -1,
+                    message = e.responseCode.message.format(*e.formats),
+                    datetime = LocalDateTime.now(),
+                    roomId = roomId,
+                    userId = userId,
+                    isAi = true
+                )
+//                    runBlocking { chatRepository.save(errorChat) } // TODO: Save?
+                actor.addChat(roomId, RoomAction.END, errorChat)
+                return@async
+            } catch (e: Exception) {
+                val errorChat = Chat(
+                    id = -1,
+                    message = "포스터를 생성하는 도중 문제가 발생 했어요. 다음에 다시 시도 해 주세요.",
+                    datetime = LocalDateTime.now(),
+                    roomId = roomId,
+                    userId = userId,
+                    isAi = true
+                )
+//                    runBlocking { chatRepository.save(errorChat) } // TODO: Save?
+                actor.addChat(roomId, RoomAction.END, errorChat)
+                return@async
+            }
+
+            actor.addChat(roomId, RoomAction.END, null)
+        }.let {
+            it.invokeOnCompletion { e ->
+                if (e != null) {
+                    log.error("Error while creating chat", e)
+                }
+            }
+        }
     }
 
     suspend fun getChatList(roomId: Long, pageable: Pageable): List<ChatResponse> {
@@ -116,7 +154,7 @@ class ChatService(
         )
     )
 
-    //    fun createPrompt(text: String) = chatCompletion(
+//    fun createPrompt(text: String) = chatCompletion(
 //        ChatCompletionsOptions(
 //            listOf(
 //                ChatRequestSystemMessage(
