@@ -80,7 +80,7 @@ jooq {
                     }
                     property {
                         key = "defaultNameCase"
-                        value = "as_is"
+                        value = "lower"
                     }
                 }
             }
