@@ -42,7 +42,6 @@ class CustomWebSocketHandler(
 
     @OptIn(ObsoleteCoroutinesApi::class)
     suspend fun handleSuspend(session: WebSocketSession) {
-        log.info("SubProtocol info: {}", session.handshakeInfo.subProtocol)
         val principal = session.handshakeInfo.principal.awaitSingle() as Authentication
 
         val roomId = getRoomIdFromUrl(session.handshakeInfo.uri)
