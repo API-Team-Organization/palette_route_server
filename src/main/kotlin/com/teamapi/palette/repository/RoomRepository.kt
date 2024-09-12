@@ -42,6 +42,6 @@ class RoomQueryRepositoryImpl(
             )
             .from(ROOM)
             .where(ROOM_PATH.USER_ID.eq(userId))
-            .awaitAll { RoomResponse(it.value1().id, it.value1().title, it.value2().message) }
+            .awaitAll { RoomResponse(it.value1().id, it.value1().title, it.value2()?.message) }
     }
 }
