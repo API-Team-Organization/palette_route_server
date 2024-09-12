@@ -5,7 +5,11 @@ plugins {
     id("io.spring.dependency-management") version "1.1.4"
     kotlin("jvm") version "1.9.23"
     kotlin("plugin.spring") version "1.9.23"
+    id("org.jooq.jooq-codegen-gradle") version "3.19.11"
 }
+
+apply(from = "secrets.gradle.kts")
+
 val springCloudAzureVersion by extra("5.13.0")
 val springAiVersion by extra("1.0.0-M1")
 
@@ -40,7 +44,7 @@ dependencies {
 //    implementation(project(":sdwebui"))
 
     runtimeOnly("org.mariadb:r2dbc-mariadb:1.1.3")
-    runtimeOnly("org.mariadb.jdbc:mariadb-java-client")
+    jooqCodegen("org.mariadb.jdbc:mariadb-java-client")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
@@ -53,7 +57,39 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+
+    implementation("org.jooq:jooq:3.19.11")
+    implementation("org.jooq:jooq-meta:3.19.11")
+    implementation("org.jooq:jooq-codegen:3.19.11")
+    implementation("org.jooq:jooq-kotlin:3.19.11")
+    implementation("org.jooq:jooq-kotlin-coroutines:3.19.11")
 }
+
+tasks.withType<KotlinCompile> {
+    dependsOn(":jooqCodegen")
+}
+
+jooq {
+    configuration {
+        jdbc {
+            driver = "org.mariadb.jdbc.Driver"
+            url = "jdbc:mariadb://${extra["DB_URL"]}:3306"
+            user = "${extra["MARIA_USERNAME"]}"
+            password = "${extra["MARIA_PASSWORD"]}"
+        }
+        generator {
+            database {
+                name = "org.jooq.meta.mariadb.MariaDBDatabase"
+                inputSchema = "palette"
+            }
+            generate {}
+            target {
+                packageName = "com.teamapi.palette.entity"
+            }
+        }
+    }
+}
+
 dependencyManagement {
     imports {
         mavenBom("com.azure.spring:spring-cloud-azure-dependencies:$springCloudAzureVersion")
