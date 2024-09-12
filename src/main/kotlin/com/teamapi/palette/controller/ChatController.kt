@@ -9,7 +9,6 @@ import com.teamapi.palette.response.ResponseBody
 import com.teamapi.palette.service.ChatService
 import io.swagger.v3.oas.annotations.Parameter
 import org.springdoc.core.converters.models.PageableAsQueryParam
-import org.springframework.data.domain.PageRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -31,11 +30,13 @@ class ChatController(
     @GetMapping("/{roomId}")
     suspend fun getChatList(
         @PathVariable("roomId") roomId: Long,
-        @Parameter(hidden = true) pageRequest: DefaultPageRequest
+        @RequestParam(required = false) before: Long = System.currentTimeMillis(),
+        @RequestParam(required = false) size: Long = 25
     ): ResponseEntity<ResponseBody<List<ChatResponse>>> {
         val data = chatService.getChatList(
             roomId = roomId,
-            pageable = PageRequest.of(pageRequest.page, pageRequest.size)
+            lastId = before,
+            size = size
         )
         return ResponseBody.ok("채팅 조회 성공", data)
     }

@@ -1,24 +1,14 @@
-package com.teamapi.palette.repository
+package com.teamapi.palette.repository.room
 
 import com.teamapi.palette.dto.room.RoomResponse
-import com.teamapi.palette.entity.Room
-import org.jooq.DSLContext
-import org.jooq.impl.DSL
-import org.springframework.data.repository.kotlin.CoroutineCrudRepository
-import org.springframework.stereotype.Repository
 import com.teamapi.palette.entity.tables.TblChat.TBL_CHAT as CHAT
 import com.teamapi.palette.entity.tables.TblChat.TblChatPath.TBL_CHAT as CHAT_PATH
 import com.teamapi.palette.entity.tables.TblRoom.TBL_ROOM as ROOM
 import com.teamapi.palette.entity.tables.TblRoom.TblRoomPath.TBL_ROOM as ROOM_PATH
+import com.teamapi.palette.repository.awaitAll
+import org.jooq.DSLContext
+import org.jooq.impl.DSL
 
-@Repository
-interface RoomRepository : CoroutineCrudRepository<Room, Long>, RoomQueryRepository
-
-interface RoomQueryRepository {
-    suspend fun findRoomByUserId(userId: Long): List<RoomResponse>
-}
-
-@Repository
 class RoomQueryRepositoryImpl(
     private val ctx: DSLContext
 ) : RoomQueryRepository {

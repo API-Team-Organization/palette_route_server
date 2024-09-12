@@ -3,7 +3,7 @@ package com.teamapi.palette.service
 import com.teamapi.palette.dto.room.RoomResponse
 import com.teamapi.palette.dto.room.UpdateRoomTitleRequest
 import com.teamapi.palette.entity.Room
-import com.teamapi.palette.repository.RoomRepository
+import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import org.springframework.stereotype.Service

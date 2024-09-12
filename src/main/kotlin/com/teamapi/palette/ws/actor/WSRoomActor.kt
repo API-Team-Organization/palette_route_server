@@ -1,7 +1,7 @@
 package com.teamapi.palette.ws.actor
 
 import com.teamapi.palette.entity.Chat
-import com.teamapi.palette.repository.RoomRepository
+import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.ws.dto.RoomAction
 import com.teamapi.palette.ws.dto.res.ChatMessage

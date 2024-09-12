@@ -8,8 +8,8 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.teamapi.palette.dto.chat.AzureExceptionResponse
 import com.teamapi.palette.dto.chat.ChatResponse
 import com.teamapi.palette.entity.Chat
-import com.teamapi.palette.repository.ChatRepository
-import com.teamapi.palette.repository.RoomRepository
+import com.teamapi.palette.repository.chat.ChatRepository
+import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.ws.actor.SinkActor
@@ -22,10 +22,11 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
+import java.time.Instant
 import java.time.LocalDateTime
+import java.util.*
 
 @Service
 class ChatService(
@@ -118,13 +119,18 @@ class ChatService(
         }
     }
 
-    suspend fun getChatList(roomId: Long, pageable: Pageable): List<ChatResponse> {
+    suspend fun getChatList(roomId: Long, lastId: Long, size: Long): List<ChatResponse> {
         val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
 
-        return chatRepository.findAllByRoomIdIsOrderByDatetimeDesc(room.id!!, pageable)
-            .map { ChatResponse(it.id!!, it.message, it.datetime, it.roomId, it.userId, it.isAi, it.resource) }
-            .toList()
+        return chatRepository.findPagedWithLastMessageId(
+            room.id!!,
+            LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(lastId),
+                TimeZone.getDefault().toZoneId()
+            ),
+            size
+        )
     }
 
     // TODO: Apply Comfy, Prompt enhancing - in next semester
@@ -154,7 +160,7 @@ class ChatService(
         )
     )
 
-//    fun createPrompt(text: String) = chatCompletion(
+    //    fun createPrompt(text: String) = chatCompletion(
 //        ChatCompletionsOptions(
 //            listOf(
 //                ChatRequestSystemMessage(
