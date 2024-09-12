@@ -6,6 +6,7 @@ import com.teamapi.palette.ws.ext.sendAndClose
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
@@ -19,7 +20,8 @@ class WSDelegateActor(
     private val mapper: ObjectMapper,
 ) {
     @ObsoleteCoroutinesApi
-    operator fun invoke(session: WebSocketSession, principal: UserDetails) = CoroutineScope(Dispatchers.Unconfined).actor<DelegateMessage> {
+    operator fun invoke(session: WebSocketSession, principal: UserDetails): SendChannel<DelegateMessage>
+    = CoroutineScope(Dispatchers.Unconfined).actor {
         this.channel.invokeOnClose {
             runBlocking {
                 session.handleMessage(DelegateMessage.Close, principal) // auto close
