@@ -24,37 +24,35 @@ repositories {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
-    implementation("org.springframework.session:spring-session-data-redis")
-    implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
-    implementation("org.springframework.ai:spring-ai-azure-openai-spring-boot-starter")
-//    implementation("com.azure.spring:spring-cloud-azure-starter-storage-blob")
-//    implementation("com.azure.spring:spring-cloud-azure-starter-storage")
-    implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-mail")
-
-//    implementation(project(":sdwebui"))
-
-    runtimeOnly("org.mariadb:r2dbc-mariadb:1.1.3")
-    jooqCodegen("org.mariadb.jdbc:mariadb-java-client")
-
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.springframework.security:spring-security-test")
 
-    implementation("jakarta.servlet:jakarta.servlet-api:6.1.0-M2")
+    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
 
+    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
+    implementation("org.springframework.session:spring-session-data-redis")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
+
+    implementation("org.springframework.ai:spring-ai-azure-openai-spring-boot-starter")
+    implementation(group =  "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
+//    implementation("com.azure.spring:spring-cloud-azure-starter-storage-blob")
+//    implementation("com.azure.spring:spring-cloud-azure-starter-storage")
+
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+
     implementation("org.springdoc:springdoc-openapi-starter-webflux-api:2.5.0")
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0")
-    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+
+    runtimeOnly("org.mariadb:r2dbc-mariadb:1.1.3")
 
     implementation("org.jooq:jooq:3.19.11")
     jooqCodegen("org.jooq:jooq-meta:3.19.11")
