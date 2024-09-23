@@ -28,9 +28,6 @@ jobs:
           
           touch ./src/main/resources/palette.p12
           echo '${{ secrets.PALETTE_P12 }}' | base64 --decode > ./src/main/resources/palette.p12
-          
-          touch ./secrets.gradle.kts
-          echo '${{ secrets.JOOQ_DB_SECRETS }}' | base64 --decode > ./secrets.gradle.kts
 
       - name: Build with Gradle
         run: |
