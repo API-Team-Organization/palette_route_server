@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: palette
+  data:
+    mongodb:
+      host: ${MONGO_HOST}
+      port: ${MONGO_PORT}
+      database: ${DB_NAME}
+    redis:
+      port: ${REDIS_PORT}
+      host: ${REDIS_HOST}
+      password: ${REDIS_PASSWORD}
+      repositories:
+        enabled: false
+  r2dbc:
+    url: r2dbc:mariadb://${MARIA_HOST}:${MARIA_PORT}/${DB_NAME}
+    username: ${MARIA_USERNAME}
+    password: ${MARIA_PASSWORD}
+  ai:
+    azure:
+      openai:
+        api-key: ${OPENAI_APIKEY}
+        endpoint: ${OPENAI_ENDPOINT}
+  mail:
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT}
+    protocol: smtp
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          timeout: 15000
+          starttls:
+            enable: true
+springdoc:
+  enable-kotlin: true
+  enable-spring-security: true
+  swagger-ui:
+    with-credentials: true
+    doc-expansion: none
+    persist-authorization: true
+    path: swagger
+  use-fqn: true
+  webjars:
+    prefix: external
+
+logging:
+  level:
+    org.jooq: trace
+    org.springframework.r2dbc: DEBUG
