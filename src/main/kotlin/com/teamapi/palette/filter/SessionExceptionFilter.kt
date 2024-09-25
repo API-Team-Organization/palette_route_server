@@ -31,8 +31,7 @@ class SessionExceptionFilter(
         }
 
         if (caught.isFailure) {
-            val e = caught.exceptionOrNull()
-            when (e) {
+            when (val e = caught.exceptionOrNull()) {
                 is CustomException -> {
                     return exchange.response.writeJson(e.responseCode, *e.formats)
                 }
