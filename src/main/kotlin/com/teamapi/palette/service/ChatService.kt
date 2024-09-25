@@ -122,14 +122,16 @@ class ChatService(
         val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
 
-        return chatRepository.findPagedWithLastMessageId(
-            room.id!!,
-            LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(lastId),
-                TimeZone.getDefault().toZoneId()
-            ),
-            size
-        )
+        // TODO: replace to Mongo query
+//        return chatRepository.findPagedWithLastMessageId(
+//            room.id!!,
+//            LocalDateTime.ofInstant(
+//                Instant.ofEpochMilli(lastId),
+//                TimeZone.getDefault().toZoneId()
+//            ),
+//            size
+//        )
+        return emptyList()
     }
 
     // TODO: Apply Comfy, Prompt enhancing - in next semester
@@ -181,9 +183,10 @@ class ChatService(
         val page = PageRequest.of(pageNumber, pageSize)
         val userId = sessionHolder.me()
 
-        return chatRepository.findChatByIsAiIsAndUserIdIsAndResourceIs(true, userId, "IMAGE", page)
-            .map { it.message }
-            .toList()
+        return emptyList() // TODO: Replase to mongo query
+//        return chatRepository.findChatByIsAiIsAndUserIdIsAndResourceIs(true, userId, "IMAGE", page)
+//            .map { it.message }
+//            .toList()
     }
 
     private fun chatCompletion(options: ChatCompletionsOptions) = azure.getChatCompletions(
