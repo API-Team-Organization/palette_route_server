@@ -1,12 +1,12 @@
-package com.teamapi.palette.entity
+package com.teamapi.palette.entity.chat
 
 import com.teamapi.palette.dto.chat.ChatResponse
 import org.springframework.data.annotation.Id
+import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.relational.core.mapping.Column
-import org.springframework.data.relational.core.mapping.Table
 import java.time.LocalDateTime
 
-@Table("tbl_chat")
+@Document("chats")
 data class Chat(
     @Id
     val id: Long? = null,

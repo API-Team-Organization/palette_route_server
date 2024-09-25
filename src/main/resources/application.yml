@@ -3,19 +3,15 @@ spring:
     name: palette
   data:
     mongodb:
-      host: ${MONGO_HOST}
-      port: ${MONGO_PORT}
-      database: ${DB_NAME}
+      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}/${DB_NAME}
     redis:
-      port: ${REDIS_PORT}
-      host: ${REDIS_HOST}
-      password: ${REDIS_PASSWORD}
       repositories:
         enabled: false
+      url: redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
   r2dbc:
-    url: r2dbc:mariadb://${MARIA_HOST}:${MARIA_PORT}/${DB_NAME}
-    username: ${MARIA_USERNAME}
-    password: ${MARIA_PASSWORD}
+    url: r2dbc:${R2DBC_DIALECT}://${R2DBC_HOST}:${R2DBC_PORT}/${DB_NAME}
+    username: ${R2DBC_USERNAME}
+    password: ${R2DBC_PASSWORD}
   ai:
     azure:
       openai:
@@ -34,6 +30,8 @@ spring:
           timeout: 15000
           starttls:
             enable: true
+  jooq:
+    sql-dialect: ${R2DBC_DIALECT}
 springdoc:
   enable-kotlin: true
   enable-spring-security: true

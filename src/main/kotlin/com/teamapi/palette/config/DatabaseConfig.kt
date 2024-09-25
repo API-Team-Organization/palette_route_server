@@ -1,11 +1,11 @@
 package com.teamapi.palette.config
 
 import io.r2dbc.spi.ConnectionFactory
-import org.jooq.SQLDialect
 import org.jooq.impl.DefaultConfiguration
 import org.jooq.impl.DefaultDSLContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
 import org.springframework.data.redis.core.ReactiveRedisTemplate
 import org.springframework.data.redis.serializer.RedisSerializationContext
@@ -13,6 +13,7 @@ import org.springframework.data.redis.serializer.RedisSerializer
 import org.springframework.r2dbc.connection.TransactionAwareConnectionFactoryProxy
 
 @Configuration
+@EnableMongoRepositories
 class DatabaseConfig {
     @Bean
     fun redisTemplateForRepository(redisConnectionFactory: ReactiveRedisConnectionFactory): ReactiveRedisTemplate<String, Any> {
@@ -29,8 +30,7 @@ class DatabaseConfig {
     @Bean
     fun dslContext(connectionFactory: ConnectionFactory) = DefaultDSLContext(
         DefaultConfiguration().set(TransactionAwareConnectionFactoryProxy(connectionFactory))
-            .set(SQLDialect.MARIADB) // TODO: https://github.com/jOOQ/jOOQ/issues/12221
-//                .set(
+//                .set( // TODO: https://github.com/jOOQ/jOOQ/issues/12221
 //                    Settings()
 //                        .withRenderFormatted(true)
 //                        .withExecuteLogging(true)

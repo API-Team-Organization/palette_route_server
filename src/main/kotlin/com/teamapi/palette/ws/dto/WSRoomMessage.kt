@@ -1,7 +1,7 @@
 package com.teamapi.palette.ws.dto
 
 import com.fasterxml.jackson.annotation.JsonCreator
-import com.teamapi.palette.entity.Chat
+import com.teamapi.palette.entity.chat.Chat
 
 data class WSRoomMessage @JsonCreator constructor(
     val roomId: Long,

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.teamapi.palette.dto.chat.AzureExceptionResponse
 import com.teamapi.palette.dto.chat.ChatResponse
-import com.teamapi.palette.entity.Chat
+import com.teamapi.palette.entity.chat.Chat
 import com.teamapi.palette.repository.chat.ChatRepository
 import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
@@ -17,8 +17,7 @@ import com.teamapi.palette.ws.dto.RoomAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
+import com.teamapi.palette.entity.consts.ChatState
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest

@@ -23,9 +23,6 @@ jobs:
 
       - name: Create secured configurations
         run: |
-          touch ./src/main/resources/application.yml
-          echo '${{ secrets.APPLICATION_YML }}' > ./src/main/resources/application.yml
-          
           touch ./src/main/resources/palette.p12
           echo '${{ secrets.PALETTE_P12 }}' | base64 --decode > ./src/main/resources/palette.p12
 
@@ -59,4 +56,9 @@ jobs:
 
             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest
             
-            docker run -d -p 8080:8080 --name route ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}
+            touch ./production.env
+            echo '${{ secrets.ROUTE_ENVIRONMENT }}' | base64 --decode > ./production.env
+            
+            docker run --env-file production.env -d -p 8080:8080 --name route ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}
+            
+            rm ./production.env

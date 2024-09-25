@@ -53,6 +53,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0")
 
     runtimeOnly("org.mariadb:r2dbc-mariadb:1.1.3")
+    runtimeOnly("io.asyncer:r2dbc-mysql:1.2.0")
 
     implementation("org.jooq:jooq:3.19.11")
     jooqCodegen("org.jooq:jooq-meta:3.19.11")
@@ -84,7 +85,7 @@ jooq {
             }
             generate {}
             target {
-                packageName = "com.teamapi.palette.entity"
+                packageName = "com.teamapi.palette.gen.entity"
             }
         }
     }

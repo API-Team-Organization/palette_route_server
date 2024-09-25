@@ -3,6 +3,7 @@ package com.teamapi.palette.service
 import com.teamapi.palette.dto.room.RoomResponse
 import com.teamapi.palette.dto.room.UpdateRoomTitleRequest
 import com.teamapi.palette.entity.Room
+import com.teamapi.palette.repository.chat.ChatRepository
 import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service
 @Service
 class RoomService(
     private val roomRepository: RoomRepository,
+    private val chatRepository: ChatRepository,
     private val sessionHolder: SessionHolder
 ) {
     suspend fun createRoom(): RoomResponse {
@@ -19,7 +21,9 @@ class RoomService(
     }
 
     suspend fun getRoomList(): List<RoomResponse> {
-        return roomRepository.findRoomByUserId(sessionHolder.me())
+        roomRepository.findRoomByUserId(sessionHolder.me())
+        chatRepository // TODO get latestMessageById
+        return emptyList()
     }
 
     suspend fun updateRoomTitle(updateRoomTitleRequest: UpdateRoomTitleRequest) {
