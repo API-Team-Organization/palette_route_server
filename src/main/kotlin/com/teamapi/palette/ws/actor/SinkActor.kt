@@ -1,6 +1,6 @@
 package com.teamapi.palette.ws.actor
 
-import com.teamapi.palette.entity.Chat
+import com.teamapi.palette.entity.chat.Chat
 import com.teamapi.palette.ws.dto.RoomAction
 import com.teamapi.palette.ws.dto.WSRoomMessage
 import kotlinx.coroutines.*
