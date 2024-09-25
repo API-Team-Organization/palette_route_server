@@ -1,10 +1,13 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "3.3.0"
-    id("io.spring.dependency-management") version "1.1.4"
     kotlin("jvm") version "1.9.23"
     kotlin("plugin.spring") version "1.9.23"
+    kotlin("plugin.serialization") version "1.9.23"
+
+    id("org.springframework.boot") version "3.3.0"
+    id("io.spring.dependency-management") version "1.1.4"
+
     id("org.jooq.jooq-codegen-gradle") version "3.19.11"
 }
 
@@ -40,6 +43,10 @@ dependencies {
     implementation("org.springframework.session:spring-session-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
+    implementation("org.mongodb:mongodb-driver-kotlin-coroutine:5.0.1")
+    implementation("org.mongodb:bson-kotlinx:5.0.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
 
     implementation("org.springframework.ai:spring-ai-azure-openai-spring-boot-starter")
     implementation(group =  "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")

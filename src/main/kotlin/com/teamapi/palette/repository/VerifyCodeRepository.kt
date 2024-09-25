@@ -2,7 +2,6 @@ package com.teamapi.palette.repository
 
 import com.teamapi.palette.entity.VerifyCode
 import com.teamapi.palette.repository.redis.ReactiveRedisCrudRepository
-import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.data.redis.core.*
 import org.springframework.stereotype.Repository
 
@@ -22,7 +21,6 @@ class VerifyCodeRepository(private val redisOperations: ReactiveRedisTemplate<St
 
     override suspend fun findById(id: Long): VerifyCode? {
         val kv = redisOperations.opsForValue()
-        println(kv.get("$namespace$id").awaitFirstOrNull())
         return kv.getAndAwait("$namespace$id") as? VerifyCode
     }
 

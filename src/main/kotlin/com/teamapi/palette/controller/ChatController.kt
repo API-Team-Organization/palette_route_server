@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter
 import org.springdoc.core.converters.models.PageableAsQueryParam
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.time.OffsetDateTime
 
 @RestController
 @RequestMapping("/chat")
@@ -30,7 +31,7 @@ class ChatController(
     @GetMapping("/{roomId}")
     suspend fun getChatList(
         @PathVariable("roomId") roomId: Long,
-        @RequestParam(required = false) before: Long = System.currentTimeMillis(),
+        @RequestParam(required = false) before: String = OffsetDateTime.now().toString(),
         @RequestParam(required = false) size: Long = 25
     ): ResponseEntity<ResponseBody<List<ChatResponse>>> {
         val data = chatService.getChatList(

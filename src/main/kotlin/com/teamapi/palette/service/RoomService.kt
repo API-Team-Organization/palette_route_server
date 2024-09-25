@@ -7,6 +7,7 @@ import com.teamapi.palette.repository.chat.ChatRepository
 import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
+import kotlinx.coroutines.flow.toList
 import org.springframework.stereotype.Service
 
 @Service
@@ -21,9 +22,11 @@ class RoomService(
     }
 
     suspend fun getRoomList(): List<RoomResponse> {
-        roomRepository.findRoomByUserId(sessionHolder.me())
-        chatRepository // TODO get latestMessageById
-        return emptyList()
+        val me = sessionHolder.me()
+        val rooms = roomRepository.findRoomByUserId(me).toList()
+
+        val messageSearched = chatRepository.getLatestMessageMapById(rooms.map { it.id!! })
+        return rooms.map { RoomResponse(it.id!!, it.title, messageSearched[it.id]) }
     }
 
     suspend fun updateRoomTitle(updateRoomTitleRequest: UpdateRoomTitleRequest) {

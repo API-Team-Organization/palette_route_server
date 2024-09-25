@@ -11,9 +11,12 @@ import org.springframework.data.relational.core.mapping.Table
 data class Room(
     @Id
     val id: Long? = null,
-    val title: String? = "New Chat",
     @Column("user_id")
-    val userId: Long
+    val userId: Long,
+    val title: String? = "New Chat",
+    @Column("base_prompt")
+    val basePrompt: String? = null,
+    val aspect: String? = null, // will be enum
 ) {
     suspend fun validateUser(sessionHolder: SessionHolder): Room {
         val me = sessionHolder.me()

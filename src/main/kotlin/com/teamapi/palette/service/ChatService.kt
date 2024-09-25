@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.teamapi.palette.dto.chat.AzureExceptionResponse
 import com.teamapi.palette.dto.chat.ChatResponse
 import com.teamapi.palette.entity.chat.Chat
+import com.teamapi.palette.entity.consts.ChatState
 import com.teamapi.palette.repository.chat.ChatRepository
 import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
@@ -17,15 +18,12 @@ import com.teamapi.palette.ws.dto.RoomAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import com.teamapi.palette.entity.consts.ChatState
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
-import java.time.Instant
-import java.time.LocalDateTime
-import java.util.*
+import java.time.ZonedDateTime
 
 @Service
 class ChatService(
@@ -46,7 +44,7 @@ class ChatService(
         val myMsg = chatRepository.save(
             Chat(
                 message = message,
-                datetime = LocalDateTime.now(),
+                datetime = ZonedDateTime.now(),
                 roomId = roomId,
                 userId = userId,
                 isAi = false
@@ -60,7 +58,7 @@ class ChatService(
                 val chat = createUserReturn(message).awaitSingle()
                 val textChat = Chat(
                     message = chat.choices[0].message.content,
-                    datetime = LocalDateTime.now(),
+                    datetime = ZonedDateTime.now(),
                     roomId = roomId,
                     userId = userId,
                     isAi = true
@@ -68,13 +66,13 @@ class ChatService(
                 actor.addChat(roomId, RoomAction.TEXT, textChat)
 
                 val image = draw(message).awaitSingle()
-                val stamp = LocalDateTime.now()
+                val stamp = ZonedDateTime.now()
 
                 val imageChat = chatRepository.save(
                     Chat(
                         message = image.data[0].url,
                         datetime = stamp,
-                        resource = "IMAGE",
+                        resource = ChatState.IMAGE,
                         roomId = roomId,
                         userId = userId,
                         isAi = true
@@ -84,9 +82,8 @@ class ChatService(
                 chatRepository.save(textChat.copy(datetime = stamp.plusSeconds(2))) // late save with delayed time
             } catch (e: CustomException) {
                 val errorChat = Chat(
-                    id = -1,
                     message = e.responseCode.message.format(*e.formats),
-                    datetime = LocalDateTime.now(),
+                    datetime = ZonedDateTime.now(),
                     roomId = roomId,
                     userId = userId,
                     isAi = true
@@ -96,9 +93,8 @@ class ChatService(
                 return@async
             } catch (e: Exception) {
                 val errorChat = Chat(
-                    id = -1,
                     message = "포스터를 생성하는 도중 문제가 발생 했어요. 다음에 다시 시도 해 주세요.",
-                    datetime = LocalDateTime.now(),
+                    datetime = ZonedDateTime.now(),
                     roomId = roomId,
                     userId = userId,
                     isAi = true
@@ -118,20 +114,15 @@ class ChatService(
         }
     }
 
-    suspend fun getChatList(roomId: Long, lastId: Long, size: Long): List<ChatResponse> {
+    suspend fun getChatList(roomId: Long, lastId: String, size: Long): List<ChatResponse> {
         val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
 
-        // TODO: replace to Mongo query
-//        return chatRepository.findPagedWithLastMessageId(
-//            room.id!!,
-//            LocalDateTime.ofInstant(
-//                Instant.ofEpochMilli(lastId),
-//                TimeZone.getDefault().toZoneId()
-//            ),
-//            size
-//        )
-        return emptyList()
+        return chatRepository.getMessageByRoomId(
+            room.id!!,
+            ZonedDateTime.parse(lastId),
+            size
+        )
     }
 
     // TODO: Apply Comfy, Prompt enhancing - in next semester
@@ -183,10 +174,7 @@ class ChatService(
         val page = PageRequest.of(pageNumber, pageSize)
         val userId = sessionHolder.me()
 
-        return emptyList() // TODO: Replase to mongo query
-//        return chatRepository.findChatByIsAiIsAndUserIdIsAndResourceIs(true, userId, "IMAGE", page)
-//            .map { it.message }
-//            .toList()
+        return chatRepository.getImagesByUserId(userId, page)
     }
 
     private fun chatCompletion(options: ChatCompletionsOptions) = azure.getChatCompletions(
