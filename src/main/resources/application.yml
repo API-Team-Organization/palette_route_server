@@ -3,7 +3,7 @@ spring:
     name: palette
   data:
     mongodb:
-      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}
+      uri: ${MONGO_CONNECTION}
       database: ${DB_NAME}
     redis:
       repositories:
