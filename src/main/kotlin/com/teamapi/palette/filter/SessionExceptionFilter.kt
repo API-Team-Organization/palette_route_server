@@ -51,6 +51,7 @@ class SessionExceptionFilter(
                 }
 
                 is Exception -> {
+                    e.printStackTrace()
                     log.error("WTFF", e)
                     return exchange.response.writeJson(ErrorCode.INTERNAL_SERVER_EXCEPTION)
                 }
