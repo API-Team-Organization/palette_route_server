@@ -4,6 +4,6 @@ enum class ChatState {
     CHAT,
     IMAGE,
     PROMPT_USER_INPUT,
-    PROMPT_SELECT,
+    PROMPT_SELECTABLE,
     PROMPT_GRID,
 }
