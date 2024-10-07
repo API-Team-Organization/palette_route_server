@@ -69,7 +69,7 @@ class RoomService(
                     roomId = room.id,
                     userId = me,
                     isAi = true,
-                    message = completion.choices.random().message.content, // TODO
+                    message = completion.choices.random().message.content,
                     promptId = createdQnA.qna.find { it.promptName == "aspect_ratio" }!!.id
                 )
             )
