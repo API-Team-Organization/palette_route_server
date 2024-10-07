@@ -1,11 +1,10 @@
-package com.teamapi.palette.dto.room
+package com.teamapi.palette.dto.request.room
 
 import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotNull
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class UpdateRoomTitleRequest (
-    @field:NotNull
-    val id: Long,
     @field:NotBlank
     val title: String
 )

@@ -1,14 +1,10 @@
 package com.teamapi.palette.ws.dto
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.teamapi.palette.entity.chat.Chat
+import com.teamapi.palette.dto.response.ChatResponses.*
+import kotlinx.serialization.Serializable
 
-data class WSRoomMessage @JsonCreator constructor(
+@Serializable
+data class WSRoomMessage(
     val roomId: Long,
-    val action: RoomAction,
-    val message: Chat?, // change to nullable if needed
+    val message: ChatResponse, // change to nullable if needed
 )
-
-enum class RoomAction {
-    START, TEXT, IMAGE, PROMPT, END
-}

@@ -1,18 +1,22 @@
 package com.teamapi.palette.response
 
+import com.teamapi.palette.dto.response.Responses
+import kotlinx.serialization.Serializable
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 
-class ResponseBody<T>(
+@Serializable
+class ResponseBody(
     override val code: Int,
     override val message: String,
-    val data: T,
-    ) : Response(code, message) {
+    val data: Responses,
+) : BaseResponse {
     companion object {
-        fun <T> of(code: HttpStatus, message: String, data: T): ResponseEntity<ResponseBody<T>>
-            = ResponseEntity.status(code).body(ResponseBody(code.value(), message, data))
-        fun <T> ok(message: String, data: T) = of(HttpStatus.OK, message, data)
-        fun <T> created(message: String, data: T) = of(HttpStatus.CREATED, message, data)
-        fun <T> noContent(message: String, data: T) = of(HttpStatus.NO_CONTENT, message, data)
+        fun of(code: HttpStatus, message: String, data: Responses): ResponseEntity<ResponseBody> =
+            ResponseEntity.status(code).body(ResponseBody(code.value(), message, data))
+
+        fun ok(message: String, data: Responses) = of(HttpStatus.OK, message, data)
+        fun created(message: String, data: Responses) = of(HttpStatus.CREATED, message, data)
+        fun noContent(message: String, data: Responses) = of(HttpStatus.NO_CONTENT, message, data)
     }
 }

@@ -1,6 +1,14 @@
 package com.teamapi.palette.repository.chat
 
-import org.springframework.stereotype.Repository
+import com.teamapi.palette.dto.response.ChatResponses.*
+import com.teamapi.palette.entity.chat.Chat
+import kotlinx.datetime.Instant
+import org.springframework.data.domain.Pageable
 
-@Repository
-interface ChatRepository : ChatR2dbcRepository, ChatQueryRepository
+interface ChatRepository {
+    suspend fun getImagesByUserId(userId: Long, pageable: Pageable): List<String>
+    suspend fun getMessageByRoomId(roomId: Long, offset: Instant, size: Long): List<ChatResponse>
+    suspend fun getLatestMessageMapById(roomIds: List<Long>): Map<Long, String?>
+    suspend fun getLatestChatByRoomId(roomId: Long): Chat?
+    suspend fun create(chat: Chat): Chat
+}

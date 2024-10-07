@@ -17,15 +17,15 @@ class RoomController(
     private val roomService: RoomService
 ) {
     @PostMapping
-    suspend fun createRoom(): ResponseEntity<ResponseBody<RoomResponse>> {
+    suspend fun createRoom(): ResponseEntity<ResponseBody> {
         val data = roomService.createRoom()
         return ResponseBody.ok("룸 생성 성공", data)
     }
 
     @GetMapping("/list")
-    suspend fun getRoomList(): ResponseEntity<ResponseBody<List<RoomResponse>>> {
+    suspend fun getRoomList(): ResponseEntity<ResponseList> {
         val it = roomService.getRoomList()
-        return ResponseBody.ok("룸 조회 성공", it)
+        return ResponseList.ok("룸 조회 성공", it)
     }
 
     @PatchMapping("/title")

@@ -1,18 +1,24 @@
 package com.teamapi.palette.entity.chat
 
-import com.teamapi.palette.dto.chat.ChatResponse
+import com.teamapi.palette.dto.response.ChatResponses
 import com.teamapi.palette.entity.consts.ChatState
 import com.teamapi.palette.repository.mongo.MongoDatabases
-import org.bson.codecs.pojo.annotations.BsonId
+import com.teamapi.palette.util.InstantSerializer
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.bson.types.ObjectId
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.ZonedDateTime
 
-@Document(MongoDatabases.CHAT)
+@Serializable
+@SerialName(MongoDatabases.CHAT)
 data class Chat(
-    @BsonId
+    @Contextual
+    @SerialName("_id")
     val id: ObjectId = ObjectId.get(),
-    val datetime: ZonedDateTime, // MUST-INCLUDED
+    @Serializable(with = InstantSerializer::class)
+    val datetime: Instant = Clock.System.now(),
     val resource: ChatState = ChatState.CHAT,
 
     // default property
@@ -21,8 +27,17 @@ data class Chat(
     val userId: Long,
     val isAi: Boolean,
 
-    // additional prompt data
-    val data: PromptData? = null
+    @Contextual
+    val promptId: ObjectId? = null
 ) {
-    fun toDto() = ChatResponse(id.toString(), message, resource, datetime, roomId, userId, isAi, data)
+    fun toDto() = ChatResponses.ChatResponse(
+        id.toString(),
+        message,
+        resource,
+        datetime,
+        roomId,
+        userId,
+        isAi,
+        promptId?.toString()
+    )
 }

@@ -1,17 +1,18 @@
 package com.teamapi.palette.controller
 
 import com.teamapi.palette.annotations.SwaggerRequireAuthorize
-import com.teamapi.palette.dto.chat.ChatResponse
-import com.teamapi.palette.dto.chat.CreateChatRequest
-import com.teamapi.palette.dto.default.DefaultPageRequest
+import com.teamapi.palette.dto.request.chat.CreateChatRequest
+import com.teamapi.palette.dto.request.default.DefaultPageRequest
+import com.teamapi.palette.dto.response.ChatResponses.*
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
+import com.teamapi.palette.response.ResponseList
 import com.teamapi.palette.service.ChatService
 import io.swagger.v3.oas.annotations.Parameter
+import kotlinx.datetime.Clock
 import org.springdoc.core.converters.models.PageableAsQueryParam
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.time.OffsetDateTime
 
 @RestController
 @RequestMapping("/chat")
@@ -31,15 +32,15 @@ class ChatController(
     @GetMapping("/{roomId}")
     suspend fun getChatList(
         @PathVariable("roomId") roomId: Long,
-        @RequestParam(required = false) before: String = OffsetDateTime.now().toString(),
+        @RequestParam(required = false) before: String = Clock.System.now().toString(),
         @RequestParam(required = false) size: Long = 25
-    ): ResponseEntity<ResponseBody<List<ChatResponse>>> {
+    ): ResponseEntity<ResponseList> {
         val data = chatService.getChatList(
             roomId = roomId,
             lastId = before,
             size = size
         )
-        return ResponseBody.ok("채팅 조회 성공", data)
+        return ResponseList.ok("채팅 조회 성공", data)
     }
 
 
@@ -47,8 +48,8 @@ class ChatController(
     @GetMapping("/my-image")
     suspend fun getMyImage(
         @Parameter(hidden = true) pageRequest: DefaultPageRequest
-    ): ResponseEntity<ResponseBody<List<String>>> {
+    ): ResponseEntity<ResponseBody> {
         val data = chatService.getMyImage(pageRequest.page, pageRequest.size)
-        return ResponseBody.ok("이미지 리스트 조회 완료", data)
+        return ResponseBody.ok("이미지 리스트 조회 완료", ImageListResponse(data))
     }
 }

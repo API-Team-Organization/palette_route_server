@@ -1,17 +1,19 @@
-package com.teamapi.palette.dto.auth
+package com.teamapi.palette.dto.request.auth
 
 import com.teamapi.palette.entity.User
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
+import kotlinx.datetime.toJavaLocalDate
+import kotlinx.serialization.Serializable
 import org.springframework.security.crypto.password.PasswordEncoder
-import java.time.LocalDate
 
+@Serializable
 data class RegisterRequest(
     @field:NotBlank
     val username: String,
     @field:NotBlank
     val password: String,
-    val birthDate: LocalDate,
+    val birthDate: kotlinx.datetime.LocalDate,
     @field:NotBlank
     @field:Email
     val email: String,
@@ -20,6 +22,6 @@ data class RegisterRequest(
         email,
         encoder.encode(password),
         username,
-        birthDate
+        birthDate.toJavaLocalDate()
     )
 }

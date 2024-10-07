@@ -1,10 +1,11 @@
 package com.teamapi.palette.config
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.teamapi.palette.entity.consts.UserState
 import com.teamapi.palette.response.ErrorCode
-import com.teamapi.palette.response.Response
-import com.teamapi.palette.response.exception.ErrorResponse
+import com.teamapi.palette.response.BaseResponse
+import com.teamapi.palette.response.ErrorResponse
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
@@ -28,18 +29,18 @@ import reactor.core.publisher.Mono
 
 @Configuration
 @EnableWebFluxSecurity
-class SecurityConfig(private val objectMapper: ObjectMapper) {
+class SecurityConfig(private val json: Json) {
     @Bean
     fun bCryptPasswordEncoder(): BCryptPasswordEncoder {
         return BCryptPasswordEncoder()
     }
 
-    fun <T : Response> json(exchange: ServerWebExchange, data: T): Mono<Void> {
+    private inline fun <reified T : BaseResponse> responseJson(exchange: ServerWebExchange, data: T): Mono<Void> {
         val res = exchange.response
         res.statusCode = HttpStatus.valueOf(data.code)
         res.headers.contentType = MediaType.APPLICATION_JSON
 
-        return res.writeWith(Flux.just(res.bufferFactory().wrap(objectMapper.writeValueAsBytes(data))))
+        return res.writeWith(Flux.just(res.bufferFactory().wrap(json.encodeToString(data).toByteArray())))
     }
 
 
@@ -57,13 +58,13 @@ class SecurityConfig(private val objectMapper: ObjectMapper) {
             }
             .exceptionHandling {
                 it.authenticationEntryPoint { exchange, _ ->
-                    json(
+                    responseJson(
                         exchange,
                         ErrorResponse.ofRaw(ErrorCode.INVALID_SESSION)
                     )
                 }
                     .accessDeniedHandler { exchange, _ ->
-                        json(
+                        responseJson(
                             exchange,
                             ErrorResponse.ofRaw(ErrorCode.FORBIDDEN, exchange.request.path.value())
                         )

@@ -2,7 +2,11 @@ package com.teamapi.palette.handler
 
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import com.teamapi.palette.response.exception.ErrorResponse
+import com.teamapi.palette.response.ErrorResponse
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.MissingFieldException
+import kotlinx.serialization.SerializationException
+import org.springframework.core.codec.EncodingException
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -35,6 +39,21 @@ class ErrorHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     private fun handleMethodArgumentTypeMismatchException(e: MethodArgumentTypeMismatchException) =
         ErrorResponse.of(ErrorCode.INVALID_PARAMETER, e.parameter.method?.name)
+
+    @ExceptionHandler
+    @OptIn(ExperimentalSerializationApi::class)
+    private fun handleMissingFieldException(e: MissingFieldException) =
+        ErrorResponse.of(ErrorCode.INVALID_PARAMETER, e.missingFields.joinToString(", "))
+
+    @ExceptionHandler
+    private fun handleJsonDecodingException(e: SerializationException) =
+        ErrorResponse.of(ErrorCode.ISSUE_ON_REQUEST_BODY, e.message)
+
+    @ExceptionHandler
+    private fun handleEncodingException(e: EncodingException): ResponseEntity<ErrorResponse> {
+        e.printStackTrace() // Possibly no @Serialization annotation
+        return ErrorResponse.of(ErrorCode.INTERNAL_SERVER_EXCEPTION)
+    }
 
     @ExceptionHandler(ServerWebInputException::class)
     private fun handleServerWebInputException(e: ServerWebInputException): ResponseEntity<ErrorResponse> {

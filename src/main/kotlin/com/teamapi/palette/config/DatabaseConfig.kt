@@ -1,14 +1,10 @@
 package com.teamapi.palette.config
 
-import com.mongodb.MongoClientSettings
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.teamapi.palette.util.Jsr310CodecProvider
 import io.r2dbc.spi.ConnectionFactory
-import org.bson.codecs.configuration.CodecRegistries
 import org.jooq.impl.DefaultConfiguration
 import org.jooq.impl.DefaultDSLContext
-import org.springframework.boot.autoconfigure.mongo.MongoClientSettingsBuilderCustomizer
 import org.springframework.boot.autoconfigure.mongo.MongoConnectionDetails
 import org.springframework.boot.autoconfigure.mongo.MongoProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -37,16 +33,6 @@ class DatabaseConfig {
                 .value(RedisSerializer.java())
                 .hashValue(RedisSerializer.java())
                 .build()
-        )
-    }
-
-    @Bean
-    fun customSetting() = MongoClientSettingsBuilderCustomizer {
-        it.codecRegistry(
-            CodecRegistries.fromRegistries(
-                MongoClientSettings.getDefaultCodecRegistry(),
-                CodecRegistries.fromProviders(Jsr310CodecProvider)
-            )
         )
     }
 

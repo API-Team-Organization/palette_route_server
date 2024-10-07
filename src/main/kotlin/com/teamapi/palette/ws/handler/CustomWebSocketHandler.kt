@@ -1,6 +1,5 @@
 package com.teamapi.palette.ws.handler
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.ws.actor.SinkActor
 import com.teamapi.palette.ws.actor.SinkMessages
@@ -11,6 +10,7 @@ import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
+import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.userdetails.UserDetails
@@ -22,7 +22,7 @@ import java.net.URI
 
 @Component
 class CustomWebSocketHandler(
-    private val mapper: ObjectMapper,
+    private val mapper: Json,
     private val wsDelegateActor: WSDelegateActor,
     private val wsRoomActor: WSRoomActor,
     private val sinkActor: SinkActor

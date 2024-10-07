@@ -1,7 +1,7 @@
 package com.teamapi.palette.service
 
-import com.teamapi.palette.dto.auth.RegisterRequest
-import com.teamapi.palette.dto.user.PasswordUpdateRequest
+import com.teamapi.palette.dto.request.auth.RegisterRequest
+import com.teamapi.palette.dto.request.user.PasswordUpdateRequest
 import com.teamapi.palette.entity.User
 import com.teamapi.palette.entity.VerifyCode
 import com.teamapi.palette.entity.consts.UserState

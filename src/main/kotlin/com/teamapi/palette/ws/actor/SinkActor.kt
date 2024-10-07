@@ -1,7 +1,6 @@
 package com.teamapi.palette.ws.actor
 
 import com.teamapi.palette.entity.chat.Chat
-import com.teamapi.palette.ws.dto.RoomAction
 import com.teamapi.palette.ws.dto.WSRoomMessage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
@@ -40,9 +39,9 @@ class SinkActor(
                     println("AAA")
                 }
                 .collect {
-                    log.info("{}: [{}] {}", it.roomId, it.action, it.message)
+                    log.info("{}: [{}] {}", it.roomId, it.message)
                     for (actor in roomActors) {
-                        actor.send(RoomMessages.NewChat(it.roomId, it.action, it.message))
+                        actor.send(RoomMessages.NewChat(it.roomId, it.message))
                     }
                 }
         } catch (e: Exception) {
@@ -81,8 +80,8 @@ class SinkActor(
         actorInstance.send(msg)
     }
 
-    suspend fun addChat(roomId: Long, action: RoomAction, message: Chat?) {
-        send(SinkMessages.AddChat(roomId, action, message))
+    suspend fun addChat(roomId: Long, message: Chat) {
+        send(SinkMessages.AddChat(roomId, message))
     }
 
     override fun destroy() {
@@ -99,7 +98,7 @@ sealed interface SinkMessages {
     data class Listen(val actor: SendChannel<RoomMessages>) : SinkMessages
     data class Dispose(val actor: SendChannel<RoomMessages>) : SinkMessages
     data object CleanUp : SinkMessages
-    data class AddChat(val roomId: Long, val action: RoomAction, val message: Chat?) : SinkMessages {
-        fun toActorMessage() = WSRoomMessage(roomId, action, message)
+    data class AddChat(val roomId: Long, val message: Chat) : SinkMessages {
+        fun toActorMessage() = WSRoomMessage(roomId, message.toDto())
     }
 }

@@ -23,7 +23,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
-import java.time.ZonedDateTime
+import kotlinx.datetime.Instant
+import com.teamapi.palette.dto.response.ChatResponses.*
 
 @Service
 class ChatService(
@@ -120,7 +121,7 @@ class ChatService(
 
         return chatRepository.getMessageByRoomId(
             room.id!!,
-            ZonedDateTime.parse(lastId),
+            Instant.parse(lastId),
             size
         )
     }

@@ -1,11 +1,12 @@
 package com.teamapi.palette.ws.actor
 
-import com.teamapi.palette.entity.chat.Chat
+import com.teamapi.palette.dto.response.ChatResponses.ChatResponse
 import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
-import com.teamapi.palette.ws.dto.RoomAction
-import com.teamapi.palette.ws.dto.res.ChatMessage
-import kotlinx.coroutines.*
+import com.teamapi.palette.ws.dto.res.NewChatMessage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import org.springframework.stereotype.Component
@@ -28,9 +29,7 @@ class WSRoomActor(
                     is RoomMessages.NewChat -> {
                         if (msg.roomId != roomHooked.id) continue // ignore
 
-                        delegateActor.send(
-                            DelegateMessage.SendMessage(ChatMessage.of(msg.action, msg.chat?.toDto()))
-                        )
+                        delegateActor.send(DelegateMessage.SendMessage(NewChatMessage.fromDto(msg.chat)))
                     }
                 }
             }
@@ -38,5 +37,5 @@ class WSRoomActor(
 }
 
 sealed interface RoomMessages {
-    data class NewChat(val roomId: Long, val action: RoomAction, val chat: Chat?) : RoomMessages
+    data class NewChat(val roomId: Long, val chat: ChatResponse) : RoomMessages
 }
