@@ -39,7 +39,7 @@ class SinkActor(
                     println("AAA")
                 }
                 .collect {
-                    log.info("{}: [{}] {}", it.roomId, it.message)
+                    log.info("{}: {}", it.roomId, it.message)
                     for (actor in roomActors) {
                         actor.send(RoomMessages.NewChat(it.roomId, it.message))
                     }
