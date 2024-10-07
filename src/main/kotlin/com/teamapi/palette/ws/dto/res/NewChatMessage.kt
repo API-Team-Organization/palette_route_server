@@ -1,6 +1,6 @@
 package com.teamapi.palette.ws.dto.res
 
-import com.teamapi.palette.dto.response.ChatResponses.ChatResponse
+import com.teamapi.palette.dto.response.chat.ChatResponse
 import com.teamapi.palette.entity.consts.ChatState
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable

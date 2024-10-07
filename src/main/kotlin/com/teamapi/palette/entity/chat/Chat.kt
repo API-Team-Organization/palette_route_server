@@ -1,6 +1,6 @@
 package com.teamapi.palette.entity.chat
 
-import com.teamapi.palette.dto.response.ChatResponses
+import com.teamapi.palette.dto.response.chat.ChatResponse
 import com.teamapi.palette.entity.consts.ChatState
 import com.teamapi.palette.repository.mongo.MongoDatabases
 import com.teamapi.palette.util.InstantSerializer
@@ -30,7 +30,7 @@ data class Chat(
     @Contextual
     val promptId: ObjectId? = null
 ) {
-    fun toDto() = ChatResponses.ChatResponse(
+    fun toDto() = ChatResponse(
         id.toString(),
         message,
         resource,

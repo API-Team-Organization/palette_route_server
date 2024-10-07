@@ -1,6 +1,6 @@
 package com.teamapi.palette.repository.chat
 
-import com.teamapi.palette.dto.response.ChatResponses.*
+import com.teamapi.palette.dto.response.chat.ChatResponse
 import com.teamapi.palette.entity.chat.Chat
 import kotlinx.datetime.Instant
 import org.springframework.data.domain.Pageable

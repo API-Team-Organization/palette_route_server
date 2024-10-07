@@ -3,10 +3,10 @@ package com.teamapi.palette.controller
 import com.teamapi.palette.annotations.SwaggerRequireAuthorize
 import com.teamapi.palette.dto.request.chat.CreateChatRequest
 import com.teamapi.palette.dto.request.default.DefaultPageRequest
-import com.teamapi.palette.dto.response.ChatResponses.*
+import com.teamapi.palette.dto.response.chat.ChatResponse
+import com.teamapi.palette.dto.response.chat.ImageListResponse
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
-import com.teamapi.palette.response.ResponseList
 import com.teamapi.palette.service.ChatService
 import io.swagger.v3.oas.annotations.Parameter
 import kotlinx.datetime.Clock
@@ -34,13 +34,13 @@ class ChatController(
         @PathVariable("roomId") roomId: Long,
         @RequestParam(required = false) before: String = Clock.System.now().toString(),
         @RequestParam(required = false) size: Long = 25
-    ): ResponseEntity<ResponseList> {
+    ): ResponseEntity<ResponseBody<List<ChatResponse>>> {
         val data = chatService.getChatList(
             roomId = roomId,
             lastId = before,
             size = size
         )
-        return ResponseList.ok("채팅 조회 성공", data)
+        return ResponseBody.ok("채팅 조회 성공", data)
     }
 
 
@@ -48,7 +48,7 @@ class ChatController(
     @GetMapping("/my-image")
     suspend fun getMyImage(
         @Parameter(hidden = true) pageRequest: DefaultPageRequest
-    ): ResponseEntity<ResponseBody> {
+    ): ResponseEntity<ResponseBody<ImageListResponse>> {
         val data = chatService.getMyImage(pageRequest.page, pageRequest.size)
         return ResponseBody.ok("이미지 리스트 조회 완료", ImageListResponse(data))
     }

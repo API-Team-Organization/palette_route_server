@@ -2,9 +2,10 @@ package com.teamapi.palette.controller
 
 import com.teamapi.palette.annotations.SwaggerRequireAuthorize
 import com.teamapi.palette.dto.request.room.UpdateRoomTitleRequest
+import com.teamapi.palette.dto.response.room.QnAResponse
+import com.teamapi.palette.dto.response.room.RoomResponse
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
-import com.teamapi.palette.response.ResponseList
 import com.teamapi.palette.service.RoomService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -17,15 +18,15 @@ class RoomController(
     private val roomService: RoomService
 ) {
     @PostMapping
-    suspend fun createRoom(): ResponseEntity<ResponseBody> {
+    suspend fun createRoom(): ResponseEntity<ResponseBody<RoomResponse>> {
         val data = roomService.createRoom()
         return ResponseBody.ok("룸 생성 성공", data)
     }
 
     @GetMapping("/list")
-    suspend fun getRoomList(): ResponseEntity<ResponseList> {
+    suspend fun getRoomList(): ResponseEntity<ResponseBody<List<RoomResponse>>> {
         val it = roomService.getRoomList()
-        return ResponseList.ok("룸 조회 성공", it)
+        return ResponseBody.ok("룸 조회 성공", it)
     }
 
     @PatchMapping("/{roomId}/title")
@@ -38,8 +39,8 @@ class RoomController(
     }
 
     @GetMapping("/{roomId}/qna")
-    suspend fun getQnAs(@PathVariable roomId: Long): ResponseEntity<ResponseList> {
-        return ResponseList.ok("룸 내 질답 리스트 조회 완료", roomService.getQnA(roomId))
+    suspend fun getQnAs(@PathVariable roomId: Long): ResponseEntity<ResponseBody<List<QnAResponse>>> {
+        return ResponseBody.ok("룸 내 질답 리스트 조회 완료", roomService.getQnA(roomId))
     }
 
     @DeleteMapping("/{roomId}")

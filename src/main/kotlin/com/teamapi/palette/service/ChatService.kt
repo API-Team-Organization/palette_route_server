@@ -4,7 +4,7 @@ import com.azure.ai.openai.models.ChatCompletions
 import com.azure.ai.openai.models.ChatCompletionsOptions
 import com.azure.ai.openai.models.ChatRequestSystemMessage
 import com.azure.ai.openai.models.ChatRequestUserMessage
-import com.teamapi.palette.dto.response.ChatResponses.ChatResponse
+import com.teamapi.palette.dto.response.chat.ChatResponse
 import com.teamapi.palette.entity.chat.Chat
 import com.teamapi.palette.entity.consts.ChatState
 import com.teamapi.palette.entity.qna.ChatAnswer
@@ -47,10 +47,7 @@ class ChatService(
         room.validateUser(sessionHolder)
 
         var toBeResolved = qnaRepository.getQnAByRoomId(room.id!!)!!
-        val pendingQuestion = getPendingQuestion(toBeResolved) ?: kotlin.run {
-            log.error("no qna list in room '{}'.", room.id)
-            throw CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
-        }
+        val pendingQuestion = getPendingQuestion(toBeResolved) ?: throw CustomException(ErrorCode.QNA_INVALID_FULFILLED)
         if (pendingQuestion.type != message.type)
             throw CustomException(ErrorCode.MESSAGE_TYPE_NOT_MATCH, message.type.name, pendingQuestion.type.name)
 

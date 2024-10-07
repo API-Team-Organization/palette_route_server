@@ -5,7 +5,7 @@ import com.mongodb.client.model.FindOneAndReplaceOptions
 import com.mongodb.client.model.Projections
 import com.mongodb.client.model.ReturnDocument
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.teamapi.palette.dto.response.ChatResponses.ChatResponse
+import com.teamapi.palette.dto.response.chat.ChatResponse
 import com.teamapi.palette.entity.chat.Chat
 import com.teamapi.palette.entity.consts.ChatState
 import com.teamapi.palette.repository.mongo.*

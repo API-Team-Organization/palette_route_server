@@ -27,6 +27,7 @@ enum class ErrorCode(
 
     CHAT_FILTERED(HttpStatus.BAD_REQUEST, "부적절한 내용 감지. 내용을 수정 해 주세요."),
     MESSAGE_TYPE_NOT_MATCH(HttpStatus.BAD_REQUEST, "적절하지 않은 메시지 유형: '%s'. 메시지 유형 '%s'이(가) 필요합니다."),
+    QNA_INVALID_FULFILLED(HttpStatus.BAD_REQUEST, "이미 모든 질문에 대해 대답하였습니다."),
     QNA_INVALID_CHOICES(HttpStatus.BAD_REQUEST, "적절하지 않은 선택: '%s'. %s 선택지 중 하나가 필요합니다."),
     QNA_INVALID_GRID_CHOICES(HttpStatus.BAD_REQUEST, "적절하지 않은 그리드: (%s). 0~%d 선택지 중 하나가 필요합니다."),
     QNA_INVALID_GRID_DUPE(HttpStatus.BAD_REQUEST, "적절하지 않은 그리드: 중복이 없어야 합니다. possible dupes: (%s)"),

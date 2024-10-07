@@ -1,6 +1,6 @@
 package com.teamapi.palette.ws.dto
 
-import com.teamapi.palette.dto.response.ChatResponses.*
+import com.teamapi.palette.dto.response.chat.ChatResponse
 import kotlinx.serialization.Serializable
 
 @Serializable

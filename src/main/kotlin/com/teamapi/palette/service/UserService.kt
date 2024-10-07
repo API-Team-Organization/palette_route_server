@@ -1,7 +1,7 @@
 package com.teamapi.palette.service
 
 import com.teamapi.palette.dto.request.user.UserUpdateRequest
-import com.teamapi.palette.dto.response.UserResponses.*
+import com.teamapi.palette.dto.response.user.UserResponse
 import com.teamapi.palette.repository.UserRepository
 import kotlinx.datetime.toJavaLocalDate
 import org.springframework.stereotype.Service

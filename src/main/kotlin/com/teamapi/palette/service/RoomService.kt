@@ -1,6 +1,7 @@
 package com.teamapi.palette.service
 
-import com.teamapi.palette.dto.response.RoomResponses.*
+import com.teamapi.palette.dto.response.room.QnAResponse
+import com.teamapi.palette.dto.response.room.RoomResponse
 import com.teamapi.palette.entity.Room
 import com.teamapi.palette.entity.chat.Chat
 import com.teamapi.palette.entity.consts.ChatState
