@@ -13,7 +13,7 @@ import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.service.infra.ChatEmitService
-import com.teamapi.palette.service.infra.GeneratedChatService
+import com.teamapi.palette.service.infra.GenerativeChatService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -29,7 +29,7 @@ class RoomService(
     private val qnaRepository: QnARepository,
     private val chatEmitService: ChatEmitService,
     private val sessionHolder: SessionHolder,
-    private val generatedChatService: GeneratedChatService,
+    private val generativeChatService: GenerativeChatService,
 ) {
     private val log = LoggerFactory.getLogger(RoomService::class.java)
 
@@ -60,7 +60,7 @@ class RoomService(
                 )
             )
 
-            val completion = generatedChatService.roomWelcomeMessage()
+            val completion = generativeChatService.roomWelcomeMessage()
 
             chatEmitService.emitChat(
                 Chat(

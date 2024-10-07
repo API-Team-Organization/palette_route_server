@@ -1,24 +1,26 @@
 package com.teamapi.palette.service
 
-import com.azure.ai.openai.OpenAIAsyncClient
-import com.azure.ai.openai.models.*
-import com.azure.core.exception.HttpResponseException
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.convertValue
-import com.teamapi.palette.dto.chat.AzureExceptionResponse
-import com.teamapi.palette.dto.chat.ChatResponse
+import com.azure.ai.openai.models.ChatCompletions
+import com.azure.ai.openai.models.ChatCompletionsOptions
+import com.azure.ai.openai.models.ChatRequestSystemMessage
+import com.azure.ai.openai.models.ChatRequestUserMessage
+import com.teamapi.palette.dto.response.ChatResponses.ChatResponse
 import com.teamapi.palette.entity.chat.Chat
 import com.teamapi.palette.entity.consts.ChatState
+import com.teamapi.palette.entity.qna.ChatAnswer
+import com.teamapi.palette.entity.qna.PromptData
+import com.teamapi.palette.entity.qna.QnA
 import com.teamapi.palette.repository.chat.ChatRepository
+import com.teamapi.palette.repository.qna.QnARepository
 import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import com.teamapi.palette.ws.actor.SinkActor
-import com.teamapi.palette.ws.dto.RoomAction
+import com.teamapi.palette.service.infra.ChatEmitService
+import com.teamapi.palette.service.infra.GenerativeChatService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.datetime.Instant
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -29,11 +31,11 @@ import com.teamapi.palette.dto.response.ChatResponses.*
 @Service
 class ChatService(
     private val chatRepository: ChatRepository,
+    private val qnaRepository: QnARepository,
+    private val chatEmitService: ChatEmitService,
     private val sessionHolder: SessionHolder,
     private val roomRepository: RoomRepository,
-    private val azure: OpenAIAsyncClient,
-    private val mapper: ObjectMapper,
-    private val actor: SinkActor
+    private val generativeChatService: GenerativeChatService,
 ) {
     private val log = LoggerFactory.getLogger(ChatService::class.java)
 
@@ -141,7 +143,7 @@ class ChatService(
 //        )
 //    )
 
-    fun createUserReturn(text: String): Mono<ChatCompletions> = chatCompletion(
+    fun createUserReturn(text: String): Mono<ChatCompletions> = generativeChatService.chatCompletion(
         ChatCompletionsOptions(
             listOf(
                 ChatRequestSystemMessage(
@@ -176,20 +178,5 @@ class ChatService(
         val userId = sessionHolder.me()
 
         return chatRepository.getImagesByUserId(userId, page)
-    }
-
-    private fun chatCompletion(options: ChatCompletionsOptions) = azure.getChatCompletions(
-        "PaletteGPT", options
-    ).handleAzureError()
-
-    private fun <T> Mono<T>.handleAzureError() = onErrorMap(HttpResponseException::class.java) {
-        try {
-            if (mapper.convertValue<AzureExceptionResponse>(it.value).error.innerError.code != "ResponsibleAIPolicyViolation") throw it
-            CustomException(ErrorCode.CHAT_FILTERED)
-        } catch (e: Throwable) {
-            log.error("Error on Azure: ", it)
-            log.error("Body: {}", it.value)
-            CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
-        }
     }
 }
