@@ -1,10 +1,10 @@
 package com.teamapi.palette.controller
 
 import com.teamapi.palette.annotations.SwaggerRequireAuthorize
-import com.teamapi.palette.dto.room.RoomResponse
-import com.teamapi.palette.dto.room.UpdateRoomTitleRequest
+import com.teamapi.palette.dto.request.room.UpdateRoomTitleRequest
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
+import com.teamapi.palette.response.ResponseList
 import com.teamapi.palette.service.RoomService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -28,12 +28,18 @@ class RoomController(
         return ResponseList.ok("룸 조회 성공", it)
     }
 
-    @PatchMapping("/title")
+    @PatchMapping("/{roomId}/title")
     suspend fun updateRoomTitle(
-        @Valid @RequestBody updateRoomTitleRequest: UpdateRoomTitleRequest
+        @PathVariable roomId: Long,
+        @Valid @RequestBody request: UpdateRoomTitleRequest
     ): ResponseEntity<Response> {
-        roomService.updateRoomTitle(updateRoomTitleRequest)
+        roomService.updateRoomTitle(roomId, request.title)
         return Response.ok("룸 업데이트 완료")
+    }
+
+    @GetMapping("/{roomId}/qna")
+    suspend fun getQnAs(@PathVariable roomId: Long): ResponseEntity<ResponseList> {
+        return ResponseList.ok("룸 내 질답 리스트 조회 완료", roomService.getQnA(roomId))
     }
 
     @DeleteMapping("/{roomId}")
