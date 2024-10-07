@@ -25,8 +25,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
-import kotlinx.datetime.Instant
-import com.teamapi.palette.dto.response.ChatResponses.*
 
 @Service
 class ChatService(
@@ -39,20 +37,131 @@ class ChatService(
 ) {
     private val log = LoggerFactory.getLogger(ChatService::class.java)
 
-    suspend fun createChat(roomId: Long, message: String) {
+    private fun getPendingQuestion(qnA: QnA): PromptData? {
+        return qnA.qna.find { it.answer == null }
+    }
+
+    suspend fun <T : ChatAnswer> createChat(roomId: Long, message: T) {
+        val userId = sessionHolder.me()
         val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
 
-        val userId = sessionHolder.me()
-        val myMsg = chatRepository.save(
-            Chat(
-                message = message,
-                datetime = ZonedDateTime.now(),
-                roomId = roomId,
-                userId = userId,
-                isAi = false
+        var toBeResolved = qnaRepository.getQnAByRoomId(room.id!!)!!
+        val pendingQuestion = getPendingQuestion(toBeResolved) ?: kotlin.run {
+            log.error("no qna list in room '{}'.", room.id)
+            throw CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
+        }
+        if (pendingQuestion.type != message.type)
+            throw CustomException(ErrorCode.MESSAGE_TYPE_NOT_MATCH, message.type.name, pendingQuestion.type.name)
+
+        when (message) {
+            is ChatAnswer.SelectableAnswer -> {
+                val selectable = pendingQuestion as PromptData.Selectable
+                if (selectable.question.choices.none { it.id == message.choiceId })
+                    throw CustomException(
+                        ErrorCode.QNA_INVALID_CHOICES,
+                        message.choiceId,
+                        selectable.question.choices.joinToString(", ") { "'${it.id}'" }
+                    )
+
+                chatEmitService.emitChat(
+                    Chat(
+                        message = selectable.question.choices.find { it.id == message.choiceId }!!.displayName,
+                        roomId = room.id,
+                        userId = userId,
+                        isAi = false
+                    )
+                )
+            }
+
+            is ChatAnswer.GridAnswer -> {
+                val grid = pendingQuestion as PromptData.Grid
+                val maxSize = grid.question.xSize * grid.question.ySize
+                val exceeds = message.choice.filter { it >= maxSize }
+                if (exceeds.isNotEmpty())
+                    throw CustomException(ErrorCode.QNA_INVALID_GRID_CHOICES, exceeds.joinToString(", "), maxSize - 1)
+
+                if (message.choice.size > maxSize)
+                    throw CustomException(ErrorCode.QNA_INVALID_GRID_ABOVE_MAX, maxSize)
+
+                if (message.choice.size != message.choice.distinct().size)
+                    throw CustomException(ErrorCode.QNA_INVALID_GRID_DUPE, (message.choice.withIndex().let {
+                        @Suppress("ConvertArgumentToSet")
+                        it - it.distinctBy { it.value } // distinct is same with toSet
+                    }).joinToString(", ") { "${it.value}" })
+
+
+                chatEmitService.emitChat(
+                    Chat(
+                        message = message.choice.joinToString(", "),
+                        roomId = room.id,
+                        userId = userId,
+                        isAi = false
+                    )
+                )
+            }
+
+            is ChatAnswer.UserInputAnswer -> {
+                // TODO: Add length limit?
+
+                chatEmitService.emitChat(
+                    Chat(
+                        message = message.input,
+                        roomId = room.id,
+                        userId = userId,
+                        isAi = false
+                    )
+                )
+            }
+
+        }
+
+
+        toBeResolved = qnaRepository.create(
+            toBeResolved.copy(
+                qna = toBeResolved.qna.map {
+                    if (it.id == pendingQuestion.id) it.fulfillAnswer(message)
+                    else it
+                }
             )
         )
+
+        CoroutineScope(Dispatchers.Unconfined).async {
+            val pendingQnAs = toBeResolved.qna.filter { it.answer == null }
+            if (pendingQnAs.isEmpty()) {
+                // TODO: Handle Image processing
+                chatEmitService.emitChat(
+                    Chat(
+                        roomId = room.id,
+                        userId = userId,
+                        isAi = true,
+                        message = "원하는 질문이 다 채워졌따. 만드느라 수고햇다. 이제 서버에서 이미지 생성 다만들기를 기다려"
+                    )
+                )
+                return@async
+            }
+
+            val addResponse = pendingQnAs.first()
+            val generated = generativeChatService.roomPromptMessage(addResponse.promptName)
+
+            chatEmitService.emitChat(
+                Chat(
+                    resource = ChatState.PROMPT,
+                    roomId = room.id,
+                    userId = userId,
+                    isAi = true,
+                    message = generated.choices.random().message.content,
+                    promptId = addResponse.id
+                )
+            )
+        }.invokeOnCompletion {
+            it?.let {
+                log.error("error", it)
+            }
+        }
+
+        /*
+        val userId = sessionHolder.me()
 
         actor.addChat(roomId, RoomAction.START, myMsg)
 
@@ -68,10 +177,11 @@ class ChatService(
                 )
                 actor.addChat(roomId, RoomAction.TEXT, textChat)
 
-                val image = draw(message).awaitSingle()
+                val image = generatedImageService.draw(message).awaitSingle()
                 val stamp = ZonedDateTime.now()
 
-                val imageChat = chatRepository.save(
+                chatEmitService.emitChat(
+                    RoomAction.IMAGE,
                     Chat(
                         message = image.data[0].url,
                         datetime = stamp,
@@ -81,7 +191,6 @@ class ChatService(
                         isAi = true
                     )
                 )
-                actor.addChat(roomId, RoomAction.IMAGE, imageChat)
                 chatRepository.save(textChat.copy(datetime = stamp.plusSeconds(2))) // late save with delayed time
             } catch (e: CustomException) {
                 val errorChat = Chat(
@@ -108,13 +217,11 @@ class ChatService(
             }
 
             actor.addChat(roomId, RoomAction.END, null)
-        }.let {
-            it.invokeOnCompletion { e ->
-                if (e != null) {
-                    log.error("Error while creating chat", e)
-                }
+        }.invokeOnCompletion { e ->
+            if (e != null) {
+                log.error("Error while creating chat", e)
             }
-        }
+        }*/
     }
 
     suspend fun getChatList(roomId: Long, lastId: String, size: Long): List<ChatResponse> {
@@ -129,7 +236,7 @@ class ChatService(
     }
 
     // TODO: Apply Comfy, Prompt enhancing - in next semester
-    fun draw(query: String) = azure.getImageGenerations("Dalle3", ImageGenerationOptions(query)).handleAzureError()
+//    fun draw(query: String) =
 //        webui.txt2Img(
 //        Txt2ImageOptions(
 //            samplerName = SamplingMethod.EULER_A,

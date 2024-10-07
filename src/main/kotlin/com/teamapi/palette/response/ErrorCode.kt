@@ -25,7 +25,12 @@ enum class ErrorCode(
     NOT_YOUR_ROOM(HttpStatus.NOT_FOUND, "해당 룸에는 접근 권한이 없음"),
     FORBIDDEN(HttpStatus.FORBIDDEN, "'%s' 엔드포인트에 대해 접근 할 수 있는 권한이 없음"),
 
-    CHAT_FILTERED(HttpStatus.BAD_REQUEST, "부적절한 내용 감지. 내용을 수정 해 주세요.")
+    CHAT_FILTERED(HttpStatus.BAD_REQUEST, "부적절한 내용 감지. 내용을 수정 해 주세요."),
+    MESSAGE_TYPE_NOT_MATCH(HttpStatus.BAD_REQUEST, "적절하지 않은 메시지 유형: '%s'. 메시지 유형 '%s'이(가) 필요합니다."),
+    QNA_INVALID_CHOICES(HttpStatus.BAD_REQUEST, "적절하지 않은 선택: '%s'. %s 선택지 중 하나가 필요합니다."),
+    QNA_INVALID_GRID_CHOICES(HttpStatus.BAD_REQUEST, "적절하지 않은 그리드: (%s). 0~%d 선택지 중 하나가 필요합니다."),
+    QNA_INVALID_GRID_DUPE(HttpStatus.BAD_REQUEST, "적절하지 않은 그리드: 중복이 없어야 합니다. possible dupes: (%s)"),
+    QNA_INVALID_GRID_ABOVE_MAX(HttpStatus.BAD_REQUEST, "적절하지 않은 그리드: 너무 많은 선택지. 최대 크기는 %d입니다."),
     ;
 
     override fun getName() = name

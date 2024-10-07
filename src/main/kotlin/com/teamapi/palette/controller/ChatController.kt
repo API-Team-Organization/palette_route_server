@@ -25,7 +25,7 @@ class ChatController(
         @RequestBody request: CreateChatRequest,
         @RequestParam("roomId") roomId: Long
     ): ResponseEntity<Response> {
-        chatService.createChat(roomId, request.message)
+        chatService.createChat(roomId, request.data)
         return Response.ok("답변 요청 성공")
     }
 
