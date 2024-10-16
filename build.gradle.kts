@@ -52,7 +52,7 @@ dependencies {
 
     implementation("org.springframework.ai:spring-ai-azure-openai-spring-boot-starter")
     implementation(group =  "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
-//    implementation("com.azure.spring:spring-cloud-azure-starter-storage-blob")
+    implementation("com.azure.spring:spring-cloud-azure-starter-storage-blob")
 //    implementation("com.azure.spring:spring-cloud-azure-starter-storage")
 
     implementation("org.springframework.boot:spring-boot-starter-validation")
