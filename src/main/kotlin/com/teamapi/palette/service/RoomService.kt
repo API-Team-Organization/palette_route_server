@@ -56,7 +56,7 @@ class RoomService(
                         ),
                         PromptData.UserInput("product_explanation"),
                         PromptData.UserInput("title"),
-                        PromptData.Grid("title_position", ChatQuestion.GridQuestion(3, 3))
+                        PromptData.Grid("title_position", ChatQuestion.GridQuestion(1, 3, 1))
                     )
                 )
             )

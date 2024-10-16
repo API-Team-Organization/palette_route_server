@@ -74,7 +74,7 @@ sealed class ChatQuestion(val type: PromptType) {
     data class SelectableQuestion(val choices: List<PromptData.Selectable.Choice>) : ChatQuestion(PromptType.SELECTABLE)
 
     @Serializable
-    data class GridQuestion(val xSize: Int, val ySize: Int) : ChatQuestion(PromptType.GRID)
+    data class GridQuestion(val xSize: Int, val ySize: Int, val maxCount: Int) : ChatQuestion(PromptType.GRID)
 
     @Serializable
     data object UserInputQuestion : ChatQuestion(PromptType.USER_INPUT)
