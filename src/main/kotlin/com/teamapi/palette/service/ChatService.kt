@@ -73,10 +73,11 @@ class ChatService(
 
             is ChatAnswer.GridAnswer -> {
                 val grid = pendingQuestion as PromptData.Grid
+                val gridPossibleMax = grid.question.xSize * grid.question.ySize
                 val maxSize = grid.question.maxCount
-                val exceeds = message.choice.filter { it >= maxSize }
+                val exceeds = message.choice.filter { it >= gridPossibleMax }
                 if (exceeds.isNotEmpty())
-                    throw CustomException(ErrorCode.QNA_INVALID_GRID_CHOICES, exceeds.joinToString(", "), maxSize - 1)
+                    throw CustomException(ErrorCode.QNA_INVALID_GRID_CHOICES, exceeds.joinToString(", "), gridPossibleMax - 1)
 
                 if (message.choice.size > maxSize)
                     throw CustomException(ErrorCode.QNA_INVALID_GRID_ABOVE_MAX, maxSize)
