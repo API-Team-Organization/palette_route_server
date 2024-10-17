@@ -1,9 +1,8 @@
 package com.teamapi.palette.ws.actor
 
-import com.teamapi.palette.dto.response.chat.ChatResponse
 import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
-import com.teamapi.palette.ws.dto.res.NewChatMessage
+import com.teamapi.palette.ws.dto.res.BaseResponseMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -29,7 +28,7 @@ class WSRoomActor(
                     is RoomMessages.NewChat -> {
                         if (msg.roomId != roomHooked.id) continue // ignore
 
-                        delegateActor.send(DelegateMessage.SendMessage(NewChatMessage.fromDto(msg.chat)))
+                        delegateActor.send(DelegateMessage.SendMessage(msg.response))
                     }
                 }
             }
@@ -37,5 +36,5 @@ class WSRoomActor(
 }
 
 sealed interface RoomMessages {
-    data class NewChat(val roomId: Long, val chat: ChatResponse) : RoomMessages
+    data class NewChat(val roomId: Long, val response: BaseResponseMessage) : RoomMessages
 }

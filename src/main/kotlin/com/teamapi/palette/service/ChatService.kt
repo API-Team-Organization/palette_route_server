@@ -18,6 +18,9 @@ import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.service.infra.ChatEmitService
 import com.teamapi.palette.service.infra.GenerativeChatService
 import com.teamapi.palette.service.infra.GenerativeImageService
+import com.teamapi.palette.service.infra.comfy.ws.GenerateMessage
+import com.teamapi.palette.service.infra.comfy.ws.QueueInfoMessage
+import com.teamapi.palette.ws.actor.SinkActor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -36,6 +39,7 @@ class ChatService(
     private val chatRepository: ChatRepository,
     private val qnaRepository: QnARepository,
     private val chatEmitService: ChatEmitService,
+    private val actor: SinkActor,
     private val sessionHolder: SessionHolder,
     private val roomRepository: RoomRepository,
     private val generativeChatService: GenerativeChatService,
@@ -139,7 +143,6 @@ class ChatService(
         CoroutineScope(Dispatchers.Unconfined).async {
             val pendingQnAs = toBeResolved.qna.filter { it.answer == null }
             if (pendingQnAs.isEmpty()) {
-                // TODO: Handle Image processing
                 val release = toBeResolved.qna
 
                 val title = release.find { it.promptName == "title" }!!.answer as ChatAnswer.UserInputAnswer
@@ -176,7 +179,20 @@ class ChatService(
                         prompt.choices.random().message.content
                     )
                 )
-                if (!generated.result) {
+                var guaranteed: String? = null
+                generated.collect {
+                    when (it) {
+                        is QueueInfoMessage -> {
+                            actor.addQueue(room.id, it.position)
+                        }
+                        is GenerateMessage -> {
+                            if (it.result) {
+                                guaranteed = it.image!!
+                            }
+                        }
+                    }
+                }
+                if (guaranteed == null) {
                     chatEmitService.emitChat(
                         Chat(
                             resource = ChatState.CHAT,
@@ -186,10 +202,13 @@ class ChatService(
                             message = "이미지를 생성하는 도중 오류가 발생하였어요. ;.;"
                         )
                     )
-                } else {
+                    return@async
+                }
+
+                try {
                     val space = blob.getBlobContainerAsyncClient("palette")
                     val blobClient = space.getBlobAsyncClient("${UUID.randomUUID()}.png")
-                    blobClient.upload(BinaryData.fromBytes(Base64.decode(generated.image!!))).awaitSingle()
+                    blobClient.upload(BinaryData.fromBytes(Base64.decode(guaranteed!!))).awaitSingle()
 
                     chatEmitService.emitChat(
                         Chat(
@@ -200,6 +219,8 @@ class ChatService(
                             message = blobClient.blobUrl
                         )
                     )
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             } else {
                 val addResponse = pendingQnAs.first()
@@ -221,69 +242,6 @@ class ChatService(
                 log.error("error", it)
             }
         }
-
-        /*
-        val userId = sessionHolder.me()
-
-        actor.addChat(roomId, RoomAction.START, myMsg)
-
-        CoroutineScope(Dispatchers.Unconfined).async { // ignore
-            try {
-                val chat = createUserReturn(message).awaitSingle()
-                val textChat = Chat(
-                    message = chat.choices[0].message.content,
-                    datetime = ZonedDateTime.now(),
-                    roomId = roomId,
-                    userId = userId,
-                    isAi = true
-                )
-                actor.addChat(roomId, RoomAction.TEXT, textChat)
-
-                val image = generatedImageService.draw(message).awaitSingle()
-                val stamp = ZonedDateTime.now()
-
-                chatEmitService.emitChat(
-                    RoomAction.IMAGE,
-                    Chat(
-                        message = image.data[0].url,
-                        datetime = stamp,
-                        resource = ChatState.IMAGE,
-                        roomId = roomId,
-                        userId = userId,
-                        isAi = true
-                    )
-                )
-                chatRepository.save(textChat.copy(datetime = stamp.plusSeconds(2))) // late save with delayed time
-            } catch (e: CustomException) {
-                val errorChat = Chat(
-                    message = e.responseCode.message.format(*e.formats),
-                    datetime = ZonedDateTime.now(),
-                    roomId = roomId,
-                    userId = userId,
-                    isAi = true
-                )
-//                    runBlocking { chatRepository.save(errorChat) } // TODO: Save?
-                actor.addChat(roomId, RoomAction.END, errorChat)
-                return@async
-            } catch (e: Exception) {
-                val errorChat = Chat(
-                    message = "포스터를 생성하는 도중 문제가 발생 했어요. 다음에 다시 시도 해 주세요.",
-                    datetime = ZonedDateTime.now(),
-                    roomId = roomId,
-                    userId = userId,
-                    isAi = true
-                )
-//                    runBlocking { chatRepository.save(errorChat) } // TODO: Save?
-                actor.addChat(roomId, RoomAction.END, errorChat)
-                return@async
-            }
-
-            actor.addChat(roomId, RoomAction.END, null)
-        }.invokeOnCompletion { e ->
-            if (e != null) {
-                log.error("Error while creating chat", e)
-            }
-        }*/
     }
 
     suspend fun getChatList(roomId: Long, lastId: String, size: Long): List<ChatResponse> {
@@ -296,21 +254,6 @@ class ChatService(
             size
         )
     }
-
-    // TODO: Apply Comfy, Prompt enhancing - in next semester
-//    fun draw(query: String) =
-//        webui.txt2Img(
-//        Txt2ImageOptions(
-//            samplerName = SamplingMethod.EULER_A,
-//            scheduler = Scheduler.SGM_UNIFORM,
-//            steps = 10,
-//            width = 768,
-//            height = 1024,
-//            cfgScale = 6.5,
-//            prompt = "score_9, score_8, score_7_up, simplified, (($query):0.9), <lora:pytorch_lora_weights:1>, <lora:LineArt Mono Style LoRA_Pony XL v6:1>",
-//            negativePrompt = "bad_hands, aidxlv05_neg, (nsfw:1.5), nude, furry, text",
-//        )
-//    )
 
     fun createUserReturn(text: String): Mono<ChatCompletions> = generativeChatService.chatCompletion(
         ChatCompletionsOptions(

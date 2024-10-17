@@ -1,10 +1,10 @@
 package com.teamapi.palette.ws.dto
 
-import com.teamapi.palette.dto.response.chat.ChatResponse
+import com.teamapi.palette.ws.dto.res.BaseResponseMessage
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class WSRoomMessage(
     val roomId: Long,
-    val message: ChatResponse, // change to nullable if needed
+    val message: BaseResponseMessage, // change to nullable if needed
 )

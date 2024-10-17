@@ -2,6 +2,8 @@ package com.teamapi.palette.ws.actor
 
 import com.teamapi.palette.entity.chat.Chat
 import com.teamapi.palette.ws.dto.WSRoomMessage
+import com.teamapi.palette.ws.dto.res.NewChatMessage
+import com.teamapi.palette.ws.dto.res.NewQueuePositionMessage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
@@ -68,6 +70,11 @@ class SinkActor(
                         roomActors.remove(msg.actor)
                     }
 
+                    is SinkMessages.AddQueuePosition -> {
+                        val emit = sink.tryEmitNext(msg.toActorMessage())
+                        emit.orThrow()
+                    }
+
                     SinkMessages.CleanUp -> {
                         roomActors.removeIf { it.isClosedForSend }
                     }
@@ -82,6 +89,10 @@ class SinkActor(
 
     suspend fun addChat(roomId: Long, message: Chat) {
         send(SinkMessages.AddChat(roomId, message))
+    }
+
+    suspend fun addQueue(roomId: Long, position: Int) {
+        send(SinkMessages.AddQueuePosition(roomId, position))
     }
 
     override fun destroy() {
@@ -99,6 +110,9 @@ sealed interface SinkMessages {
     data class Dispose(val actor: SendChannel<RoomMessages>) : SinkMessages
     data object CleanUp : SinkMessages
     data class AddChat(val roomId: Long, val message: Chat) : SinkMessages {
-        fun toActorMessage() = WSRoomMessage(roomId, message.toDto())
+        fun toActorMessage() = WSRoomMessage(roomId, NewChatMessage.fromDto(message.toDto()))
+    }
+    data class AddQueuePosition(val roomId: Long, val position: Int) : SinkMessages {
+        fun toActorMessage() = WSRoomMessage(roomId, NewQueuePositionMessage(position))
     }
 }
