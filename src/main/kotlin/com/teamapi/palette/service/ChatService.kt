@@ -149,6 +149,8 @@ class ChatService(
                 val explain = release.find { it.promptName == "product_explanation" }!!.answer as ChatAnswer.UserInputAnswer
                 val aspectQnA = release.find { it.promptName == "aspect_ratio" }!! as PromptData.Selectable
                 val aspectAns = aspectQnA.answer!!
+                val hvQnA = release.find { it.promptName == "hv" }!! as PromptData.Selectable
+                val hvAns = hvQnA.answer!!
                 val grid = release.find { it.promptName == "title_position" }!!.answer as ChatAnswer.GridAnswer
 
                 val userReturn = createUserReturn(explain.input).awaitSingle()
@@ -174,8 +176,8 @@ class ChatService(
                     GenerateRequest(
                         title.input,
                         grid.choice[0],
-                        width,
-                        height,
+                        if (hvAns.choiceId == "HORIZONTAL") width else height,
+                        if (hvAns.choiceId == "HORIZONTAL") height else width,
                         prompt.choices.random().message.content
                     )
                 )

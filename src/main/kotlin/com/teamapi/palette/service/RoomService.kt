@@ -54,6 +54,16 @@ class RoomService(
                                 )
                             )
                         ),
+
+                        PromptData.Selectable(
+                            "hv",
+                            ChatQuestion.SelectableQuestion(
+                                listOf(
+                                    PromptData.Selectable.Choice("HORIZONTAL", "가로"),
+                                    PromptData.Selectable.Choice("VERTICAL", "세로"),
+                                )
+                            )
+                        ),
                         PromptData.UserInput("product_explanation"),
                         PromptData.UserInput("title"),
                         PromptData.Grid("title_position", ChatQuestion.GridQuestion(1, 3, 1))
