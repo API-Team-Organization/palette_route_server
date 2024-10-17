@@ -45,6 +45,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("io.mockk:mockk:1.9.3")
 
     implementation("jakarta.servlet:jakarta.servlet-api:6.1.0-M2")
 
