@@ -6,6 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.springframework.http.MediaType
@@ -23,19 +24,26 @@ class ExceptionReporter(
 ) {
     fun doReport(e: Exception) {
         CoroutineScope(Dispatchers.Unconfined).async {
-            reportException(e)
+            reportException(null, e)
         }.invokeOnCompletion {
             it?.printStackTrace()
         }
     }
 
-    suspend fun reportException(e: Exception) {
+    suspend fun reportException(url: String? = null, e: Exception) {
         val msg = DiscordMessage(
-            content = "Exception Received",
             embeds = listOf(
                 DiscordEmbed(
                     title = "Route Server got Exception!",
                     fields = listOf(
+                        DiscordEmbedField(
+                            "Time",
+                            "${Clock.System.now()}"
+                        ),
+                        DiscordEmbedField(
+                            "Request Path",
+                            url ?: "No URL Info"
+                        ),
                         DiscordEmbedField(
                             "Root Exception Message",
                             e.message ?: "no description provided"

@@ -56,7 +56,7 @@ class SessionExceptionFilter(
 
                 is EncodingException -> {
                     log.error("Error on Serializing response", e)
-                    reporter.doReport(e)
+                    reporter.reportException("${exchange.request.method.name()} ${exchange.request.path.value()}", e)
                     try {
                         return exchange.response.writeJson(ErrorCode.INTERNAL_SERVER_EXCEPTION)
                     } catch (e: UnsupportedOperationException) {
@@ -68,7 +68,7 @@ class SessionExceptionFilter(
 
                 is Exception -> {
                     e.printStackTrace()
-                    reporter.doReport(e)
+                    reporter.reportException("${exchange.request.method.name()} ${exchange.request.path.value()}", e)
                     return exchange.response.writeJson(ErrorCode.INTERNAL_SERVER_EXCEPTION)
                 }
             }
