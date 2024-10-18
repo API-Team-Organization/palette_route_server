@@ -1,14 +1,13 @@
-package com.teamapi.palette.extern
+package com.teamapi.palette.config
 
 import com.azure.ai.openai.OpenAIAsyncClient
 import com.azure.ai.openai.OpenAIClientBuilder
 import com.azure.core.credential.AzureKeyCredential
-import com.teamapi.palette.config.OpenAIProperties
 import org.springframework.context.annotation.Bean
-import org.springframework.stereotype.Component
+import org.springframework.context.annotation.Configuration
 
-@Component
-class AzureOpenAIClient(private val properties: OpenAIProperties) {
+@Configuration
+class OpenAIConfig(private val properties: OpenAIProperties) {
     @Bean
     fun azure(): OpenAIAsyncClient =
         OpenAIClientBuilder()

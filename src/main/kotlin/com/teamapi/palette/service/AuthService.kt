@@ -5,7 +5,7 @@ import com.teamapi.palette.dto.request.user.PasswordUpdateRequest
 import com.teamapi.palette.entity.User
 import com.teamapi.palette.entity.VerifyCode
 import com.teamapi.palette.entity.consts.UserState
-import com.teamapi.palette.extern.MailVerifyProvider
+import com.teamapi.palette.service.infra.MailSendService
 import com.teamapi.palette.repository.UserRepository
 import com.teamapi.palette.repository.VerifyCodeRepository
 import com.teamapi.palette.response.ErrorCode
@@ -25,7 +25,7 @@ class AuthService(
     private val coroutineUserRepository: UserRepository,
     private val userDetailsService: ReactiveUserDetailsService,
     private val verifyCodeRepository: VerifyCodeRepository,
-    private val mailVerifyProvider: MailVerifyProvider,
+    private val mailSendService: MailSendService,
     private val passwordEncoder: PasswordEncoder,
     private val sessionHolder: SessionHolder,
     private val authManager: ReactiveAuthenticationManager,
@@ -44,8 +44,8 @@ class AuthService(
     }
 
     private suspend fun createVerifyCode(user: User) {
-        val verifyCode = mailVerifyProvider.createVerifyCode()
-        mailVerifyProvider.sendEmail(user.email, verifyCode)
+        val verifyCode = mailSendService.createVerifyCode()
+        mailSendService.sendEmail(user.email, verifyCode)
         verifyCodeRepository.create(VerifyCode(user.id!!, verifyCode))
     }
 

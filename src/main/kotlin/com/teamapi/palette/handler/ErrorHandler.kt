@@ -3,6 +3,7 @@ package com.teamapi.palette.handler
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.response.ErrorResponse
+import com.teamapi.palette.util.ExceptionReporter
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.SerializationException
@@ -19,7 +20,9 @@ import org.springframework.web.server.UnsupportedMediaTypeStatusException
 
 @Suppress("unused")
 @RestControllerAdvice
-class ErrorHandler {
+class ErrorHandler(
+    val reporter: ExceptionReporter
+) {
     @ExceptionHandler(value = [CustomException::class])
     private fun customExceptionHandler(custom: CustomException): ResponseEntity<ErrorResponse> =
         ErrorResponse.of(custom.responseCode, *custom.formats)
@@ -52,6 +55,7 @@ class ErrorHandler {
     @ExceptionHandler
     private fun handleEncodingException(e: EncodingException): ResponseEntity<ErrorResponse> {
         e.printStackTrace() // Possibly no @Serialization annotation
+        reporter.doReport(e)
         return ErrorResponse.of(ErrorCode.INTERNAL_SERVER_EXCEPTION)
     }
 

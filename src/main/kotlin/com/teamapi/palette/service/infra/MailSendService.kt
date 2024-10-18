@@ -1,4 +1,4 @@
-package com.teamapi.palette.extern
+package com.teamapi.palette.service.infra
 
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
@@ -14,7 +14,7 @@ import kotlin.random.Random
 import kotlin.random.nextInt
 
 @Component
-class MailVerifyProvider(private val mailSender: JavaMailSender) {
+class MailSendService(private val mailSender: JavaMailSender) {
     companion object {
         const val MAIL_TEMPLATE = """<!DOCTYPE html>
 <html lang="ko">
@@ -96,7 +96,7 @@ class MailVerifyProvider(private val mailSender: JavaMailSender) {
     </div>
 </body>
 </html>"""
-        private val log = LoggerFactory.getLogger(MailVerifyProvider::class.java)
+        private val log = LoggerFactory.getLogger(MailSendService::class.java)
     }
 
     suspend fun sendEmail(toMail: String, code: String) {
@@ -118,7 +118,7 @@ class MailVerifyProvider(private val mailSender: JavaMailSender) {
 
                 if (e is MessagingException) {
                     log.error("error while sending mail", e)
-                    throw CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
+                    throw Exception(e) // need to be handled by reporter
                 }
                 if (e is MailException) {
                     log.error("error while sending mail", e)

@@ -56,3 +56,6 @@ logging:
   level:
     org.jooq: trace
     org.springframework.r2dbc: DEBUG
+
+palette:
+  discord-webhook: ${DISCORD_WEBHOOK}

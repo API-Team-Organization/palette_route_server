@@ -4,6 +4,7 @@ import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.ErrorResponse
 import com.teamapi.palette.response.ResponseCode
 import com.teamapi.palette.response.exception.CustomException
+import com.teamapi.palette.util.ExceptionReporter
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -23,7 +24,8 @@ import java.net.URLDecoder
 
 @Component
 class SessionExceptionFilter(
-    private val objectMapper: Json
+    private val objectMapper: Json,
+    private val reporter: ExceptionReporter
 ) : CoWebFilter(), Ordered {
     private val log = LoggerFactory.getLogger(SessionExceptionFilter::class.java)
     override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE
@@ -54,6 +56,7 @@ class SessionExceptionFilter(
 
                 is EncodingException -> {
                     log.error("Error on Serializing response", e)
+                    reporter.doReport(e)
                     try {
                         return exchange.response.writeJson(ErrorCode.INTERNAL_SERVER_EXCEPTION)
                     } catch (e: UnsupportedOperationException) {
@@ -65,7 +68,7 @@ class SessionExceptionFilter(
 
                 is Exception -> {
                     e.printStackTrace()
-                    log.error("WTFF", e)
+                    reporter.doReport(e)
                     return exchange.response.writeJson(ErrorCode.INTERNAL_SERVER_EXCEPTION)
                 }
             }
