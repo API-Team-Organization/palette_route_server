@@ -149,7 +149,7 @@ class ChatService(
                 val explain = release.find { it.promptName == "product_explanation" }!!.answer as ChatAnswer.UserInputAnswer
                 val aspectQnA = release.find { it.promptName == "aspect_ratio" }!! as PromptData.Selectable
                 val aspectAns = aspectQnA.answer!!
-                val hvQnA = release.find { it.promptName == "hv" }!! as PromptData.Selectable
+                val hvQnA = release.find { it.promptName == "horizontal_or_vertical" }!! as PromptData.Selectable
                 val hvAns = hvQnA.answer!!
                 val grid = release.find { it.promptName == "title_position" }!!.answer as ChatAnswer.GridAnswer
 

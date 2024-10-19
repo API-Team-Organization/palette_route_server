@@ -56,7 +56,7 @@ class RoomService(
                         ),
 
                         PromptData.Selectable(
-                            "hv",
+                            "horizontal_or_vertical",
                             ChatQuestion.SelectableQuestion(
                                 listOf(
                                     PromptData.Selectable.Choice("HORIZONTAL", "가로"),
