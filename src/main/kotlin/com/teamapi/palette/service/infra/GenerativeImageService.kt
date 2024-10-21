@@ -27,7 +27,7 @@ class GenerativeImageService(
 ) {
     suspend fun draw(prompt: GenerateRequest): Flow<ComfyWSBaseMessage> {
         val body = client.post()
-            .uri("https://comfy.paletteapp.xyz/gen")
+            .uri("https://comfy.paletteapp.xyz/gen/flux")
             .bodyValue(mapper.encodeToString(prompt))
             .header("content-type", "application/json")
             .awaitExchange { it.awaitBody<QueueResponse>() }

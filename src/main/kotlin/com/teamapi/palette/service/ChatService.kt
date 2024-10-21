@@ -101,7 +101,7 @@ class ChatService(
                 if (message.choice.size != message.choice.distinct().size)
                     throw CustomException(ErrorCode.QNA_INVALID_GRID_DUPE, (message.choice.withIndex().let {
                         @Suppress("ConvertArgumentToSet")
-                        it - it.distinctBy { it.value } // distinct is same with toSet
+                        it - it.distinctBy { v -> v.value } // distinct is same with toSet
                     }).joinToString(", ") { "${it.value}" })
 
 
@@ -273,7 +273,7 @@ class ChatService(
         ChatCompletionsOptions(
             listOf(
                 ChatRequestSystemMessage(
-                    "You must enter a sentence in Korean or English and extract the keywords for the sentence. All words should be in English and the words should be separated by a semicolon (',') and an underscore ('_') if there is a space in a word. Also, there should be no words other than a semicolon and any words. Produce a few more related words if the number of extracted words is less than 5. Map to  the 'drawable' words to help generate posters. Give all words lowercase."
+                    "You must enter a sentence in Korean or English and extract the keywords for the sentence. All words should be in English and the words should be separated by a semicolon (';') and an underscore ('_') if there is a space in a word. Also, there should be no words other than a semicolon and any words. Produce a few more related words if the number of extracted words is less than 5. Map to the 'drawable' words to help generate posters. Give all words lowercase. Analyze the input to determine the overall theme and context. Select an appropriate typography style that matches the theme. Choose a color palette that complements the subject matter. Decide on the composition and layout for visual impact. Identify key visual elements to include. Consider texture and lighting details to add depth. Craft a single paragraph prompt describing all these elements cohesively. Ensure the prompt is vivid, specific, and tailored for AI image generation. Output the prompt without any additional explanation or commentary."
                 ),
                 ChatRequestUserMessage(
                     "내가 만든 오렌지 주스를 광고하고 싶어. 오렌지 과즙이 주변에 터졌으면 좋겠고, 오렌지 주스가 담긴 컵과 오렌지 주스가 있었으면 좋겠어. 배경은 집 안이였으면 좋겠어."
