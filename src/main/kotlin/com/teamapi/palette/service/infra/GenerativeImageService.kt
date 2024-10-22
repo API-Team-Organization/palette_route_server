@@ -28,6 +28,7 @@ class GenerativeImageService(
     private val blobSaveAdapter: BlobSaveAdapter,
     private val exceptionReporter: ExceptionReporter,
 ) {
+    private val includesKorean = Regex("[ㄱ-ㅎ가-힣]")
     @OptIn(ExperimentalEncodingApi::class)
     suspend fun generateImage(qna: QnA, room: Room, me: Long) {
         val release = qna.qna
@@ -48,8 +49,20 @@ class GenerativeImageService(
         }
         var guaranteed: String? = null
         try {
-            val prompt = generativeChatAdapter.createPrompt(explain.input)
+            var prompt = generativeChatAdapter.createPrompt(explain.input)
             println(prompt)
+
+            val hasKorean = includesKorean.find(title.input) != null
+            if (hasKorean) {
+                prompt += "don't write any word or text"
+            } else {
+                val posStr = when (grid.choice[0]) {
+                    0 -> "top"
+                    1 -> "middle"
+                    else /*2*/ -> "bottom"
+                }
+                prompt += "Please write down the title '${title.input}', place the title typography at $posStr"
+            }
 
             val generated = generativeImageAdapter.draw(
                 GenerateRequest(
@@ -57,7 +70,8 @@ class GenerativeImageService(
                     grid.choice[0],
                     if (hvAns.choiceId == "HORIZONTAL") width else height,
                     if (hvAns.choiceId == "HORIZONTAL") height else width,
-                    prompt
+                    prompt,
+                    hasKorean
                 )
             )
 
