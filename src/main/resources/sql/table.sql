@@ -13,7 +13,6 @@ CREATE TABLE tbl_room (
     id      BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     title   VARCHAR(50),
-    base_prompt TEXT,
-    aspect      VARCHAR(64),
+
     FOREIGN KEY (user_id) REFERENCES tbl_user(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
