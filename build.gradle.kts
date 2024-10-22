@@ -12,7 +12,7 @@ plugins {
 }
 
 val springCloudAzureVersion by extra("5.13.0")
-val springAiVersion by extra("1.0.0-M1")
+val springAiVersion by extra("1.0.0-M3")
 
 group = "com.teamapi"
 version = "0.0.1-SNAPSHOT"
