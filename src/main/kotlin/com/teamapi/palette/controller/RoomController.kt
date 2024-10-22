@@ -29,6 +29,11 @@ class RoomController(
         return ResponseBody.ok("룸 조회 성공", it)
     }
 
+    @PostMapping("/{roomId}/regen")
+    suspend fun regenerate(@PathVariable roomId: Long) {
+        roomService.regenerate(roomId)
+    }
+
     @PatchMapping("/{roomId}/title")
     suspend fun updateRoomTitle(
         @PathVariable roomId: Long,

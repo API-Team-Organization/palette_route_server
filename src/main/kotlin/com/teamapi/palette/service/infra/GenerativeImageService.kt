@@ -6,7 +6,6 @@ import com.teamapi.palette.entity.consts.ChatState
 import com.teamapi.palette.entity.qna.ChatAnswer
 import com.teamapi.palette.entity.qna.PromptData
 import com.teamapi.palette.entity.qna.QnA
-import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.service.adapter.BlobSaveAdapter
 import com.teamapi.palette.service.adapter.ChatEmitAdapter
 import com.teamapi.palette.service.adapter.GenerativeChatAdapter

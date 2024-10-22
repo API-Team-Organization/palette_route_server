@@ -5,7 +5,6 @@ import com.teamapi.palette.dto.infra.req.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
-import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString

@@ -10,7 +10,6 @@ import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onEmpty
 import kotlinx.coroutines.reactive.asFlow
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.DisposableBean
@@ -32,13 +31,10 @@ class SinkActor(
                 .asFlow()
                 .cancellable()
                 .onCompletion {
-                    println("WTH?!?!?!?")
+                    log.warn("Sink worker is closed")
                 }
                 .catch {
                     it.printStackTrace()
-                }
-                .onEmpty {
-                    println("AAA")
                 }
                 .collect {
                     log.info("{}: {}", it.roomId, it.message)
