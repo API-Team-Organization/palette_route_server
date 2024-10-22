@@ -51,6 +51,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
 
     implementation("org.springframework.ai:spring-ai-azure-openai-spring-boot-starter")
+    implementation("org.springframework.ai:spring-ai-anthropic-spring-boot-starter")
     implementation(group =  "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     implementation("com.azure.spring:spring-cloud-azure-starter-storage-blob")
 //    implementation("com.azure.spring:spring-cloud-azure-starter-storage")
