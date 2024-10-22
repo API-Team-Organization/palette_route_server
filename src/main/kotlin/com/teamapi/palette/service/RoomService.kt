@@ -104,8 +104,14 @@ class RoomService(
         val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
 
+        val regenScope = chatRepository.getLatestChatByRoomId(roomId)?.regenScope == true
+
         val me = sessionHolder.me()
         val qna = qnaRepository.getQnAByRoomId(roomId)!!
+
+        if (qna.qna.any { it.answer == null } || !regenScope) {
+            throw CustomException(ErrorCode.QNA_INVALID_NOT_FULFILLED)
+        }
 
         chatEmitAdapter.emitChat(
             Chat(

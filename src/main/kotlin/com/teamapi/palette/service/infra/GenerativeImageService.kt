@@ -93,33 +93,35 @@ class GenerativeImageService(
             e.printStackTrace()
             guaranteed = null
         }
-        if (guaranteed == null) {
-            chatEmitAdapter.emitChat(
-                Chat(
-                    resource = ChatState.CHAT,
-                    roomId = room.id!!,
-                    userId = me,
-                    isAi = true,
-                    message = "이미지를 생성하는 도중 오류가 발생하였어요. ;.;"
+        if (guaranteed != null) {
+            try {
+                val uploaded = blobSaveAdapter.save(Base64.decode(guaranteed!!))
+
+                chatEmitAdapter.emitChat(
+                    Chat(
+                        resource = ChatState.IMAGE,
+                        roomId = room.id!!,
+                        userId = me,
+                        isAi = true,
+                        message = uploaded.blobUrl,
+                        regenScope = true
+                    )
                 )
-            )
-            return
+                return
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
-        try {
-            val uploaded = blobSaveAdapter.save(Base64.decode(guaranteed!!))
-
-            chatEmitAdapter.emitChat(
-                Chat(
-                    resource = ChatState.IMAGE,
-                    roomId = room.id!!,
-                    userId = me,
-                    isAi = true,
-                    message = uploaded.blobUrl
-                )
+        chatEmitAdapter.emitChat(
+            Chat(
+                resource = ChatState.CHAT,
+                roomId = room.id!!,
+                userId = me,
+                isAi = true,
+                message = "이미지를 생성하는 도중 오류가 발생하였어요. ;.;",
+                regenScope = true
             )
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        )
     }
 }

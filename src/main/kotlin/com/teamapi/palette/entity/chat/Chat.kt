@@ -26,7 +26,7 @@ data class Chat(
     val roomId: Long,
     val userId: Long,
     val isAi: Boolean,
-
+    val regenScope: Boolean = false,
     @Contextual
     val promptId: ObjectId? = null
 ) {
