@@ -3,7 +3,7 @@ package com.teamapi.palette.ws.actor
 import com.teamapi.palette.entity.chat.Chat
 import com.teamapi.palette.ws.dto.WSRoomMessage
 import com.teamapi.palette.ws.dto.res.NewChatMessage
-import com.teamapi.palette.ws.dto.res.NewQueuePositionMessage
+import com.teamapi.palette.ws.dto.res.GenerateStatus
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
@@ -22,6 +22,7 @@ class SinkActor(
 ) : DisposableBean {
     private val log = LoggerFactory.getLogger(SinkActor::class.java)
 
+    private val generates = HashMap<Long, Int>()
     private val roomActors: MutableSet<SendChannel<RoomMessages>> = hashSetOf()
     private val sinkWorker = CoroutineScope(Dispatchers.Unconfined).async {
         log.info("Sink Listener Working!")
@@ -48,16 +49,24 @@ class SinkActor(
         log.info("Sink Listener dies...")
     }
 
+    fun isGenerating(roomId: Long) = generates[roomId]
+    fun setGenerating(roomId: Long, curr: Boolean, pos: Int) {
+        val prev = isGenerating(roomId) != null
+        if (curr != prev) {
+            if (curr) generates[roomId] = pos
+            else generates.remove(roomId)
+
+            CoroutineScope(Dispatchers.Unconfined).launch {
+                addQueue(roomId, pos, curr)
+            }.start()
+        }
+    }
+
     @OptIn(DelicateCoroutinesApi::class, ObsoleteCoroutinesApi::class)
     private val actorInstance = CoroutineScope(Dispatchers.Unconfined).actor<SinkMessages> {
         for (msg in channel) {
             synchronized(roomActors) {
                 when (msg) {
-                    is SinkMessages.AddChat -> {
-                        val emit = sink.tryEmitNext(msg.toActorMessage())
-                        emit.orThrow()
-                    }
-
                     is SinkMessages.Listen -> {
                         roomActors.add(msg.actor)
                     }
@@ -66,13 +75,16 @@ class SinkActor(
                         roomActors.remove(msg.actor)
                     }
 
-                    is SinkMessages.AddQueuePosition -> {
-                        val emit = sink.tryEmitNext(msg.toActorMessage())
-                        emit.orThrow()
-                    }
-
                     SinkMessages.CleanUp -> {
                         roomActors.removeIf { it.isClosedForSend }
+                    }
+
+                    else -> {
+                        if (msg is ActorCodable) {
+                            val emit = sink.tryEmitNext(msg.toActorMessage())
+                            emit.orThrow()
+                        }
+                        Unit
                     }
                 }
             }
@@ -87,8 +99,8 @@ class SinkActor(
         send(SinkMessages.AddChat(roomId, message))
     }
 
-    suspend fun addQueue(roomId: Long, position: Int) {
-        send(SinkMessages.AddQueuePosition(roomId, position))
+    suspend fun addQueue(roomId: Long, position: Int, generating: Boolean) {
+        send(SinkMessages.AddQueuePosition(roomId, position, generating))
     }
 
     override fun destroy() {
@@ -105,10 +117,14 @@ sealed interface SinkMessages {
     data class Listen(val actor: SendChannel<RoomMessages>) : SinkMessages
     data class Dispose(val actor: SendChannel<RoomMessages>) : SinkMessages
     data object CleanUp : SinkMessages
-    data class AddChat(val roomId: Long, val message: Chat) : SinkMessages {
-        fun toActorMessage() = WSRoomMessage(roomId, NewChatMessage.fromDto(message.toDto()))
+    data class AddChat(val roomId: Long, val message: Chat) : SinkMessages, ActorCodable {
+        override fun toActorMessage() = WSRoomMessage(roomId, NewChatMessage.fromDto(message.toDto()))
     }
-    data class AddQueuePosition(val roomId: Long, val position: Int) : SinkMessages {
-        fun toActorMessage() = WSRoomMessage(roomId, NewQueuePositionMessage(position))
+    data class AddQueuePosition(val roomId: Long, val position: Int, val generating: Boolean) : SinkMessages, ActorCodable {
+        override fun toActorMessage() = WSRoomMessage(roomId, GenerateStatus(position, generating))
     }
+}
+
+interface ActorCodable {
+    fun toActorMessage(): WSRoomMessage
 }

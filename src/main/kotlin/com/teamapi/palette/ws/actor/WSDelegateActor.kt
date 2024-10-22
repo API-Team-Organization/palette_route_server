@@ -20,6 +20,7 @@ import reactor.kotlin.core.publisher.toMono
 @Component
 class WSDelegateActor(
     private val mapper: Json,
+    private val sinkActor: SinkActor
 ) {
     @ObsoleteCoroutinesApi
     operator fun invoke(session: WebSocketSession, principal: UserDetails): SendChannel<DelegateMessage>
@@ -42,7 +43,9 @@ class WSDelegateActor(
             is DelegateMessage.Validate -> {
                 if (principal.username?.toLongOrNull() != msg.id) {
                     handleMessage(DelegateMessage.DisconnectWithError(ErrorCode.NOT_YOUR_ROOM), principal)
+                    return
                 }
+                msg.onSuccess(sinkActor)
             }
             DelegateMessage.Close -> close().awaitSingleOrNull()
         }
@@ -53,5 +56,5 @@ sealed interface DelegateMessage {
     data class DisconnectWithError(val error: ErrorCode) : DelegateMessage
     data class SendMessage(val data: BaseResponseMessage): DelegateMessage
     data object Close : DelegateMessage
-    data class Validate(val id: Long) : DelegateMessage
+    data class Validate(val id: Long, val onSuccess: suspend (SinkActor) -> Unit) : DelegateMessage
 }

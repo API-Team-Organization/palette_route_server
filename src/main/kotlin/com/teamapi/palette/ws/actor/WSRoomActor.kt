@@ -21,7 +21,10 @@ class WSRoomActor(
                 ?: return@actor delegateActor.trySend(DelegateMessage.DisconnectWithError(ErrorCode.ROOM_NOT_FOUND))
                     .let {}
 
-            delegateActor.trySend(DelegateMessage.Validate(roomHooked.userId))
+            delegateActor.trySend(DelegateMessage.Validate(roomHooked.userId) {
+                val generating = it.isGenerating(roomId)
+                it.addQueue(roomId, generating ?: -1, generating != null)
+            })
 
             for (msg in channel) {
                 when (msg) {
