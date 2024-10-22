@@ -30,8 +30,9 @@ class RoomController(
     }
 
     @PostMapping("/{roomId}/regen")
-    suspend fun regenerate(@PathVariable roomId: Long) {
+    suspend fun regenerate(@PathVariable roomId: Long): ResponseEntity<Response> {
         roomService.regenerate(roomId)
+        return Response.ok("생성 요청 성공")
     }
 
     @PatchMapping("/{roomId}/title")
