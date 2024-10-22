@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -48,7 +49,7 @@ class GenerativeImageService(
                     val keepAlive = async {
                         while (isActive && it.isOpen) {
                             delay(10000L)
-                            it.send(Mono.just(it.textMessage(Random.nextInt().toString()))).awaitSingle()
+                            it.send(Mono.just(it.textMessage(Random.nextInt().toString()))).awaitSingleOrNull()
                         }
                     }
                     it.receive()
