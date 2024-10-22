@@ -3,8 +3,12 @@ package com.teamapi.palette.service.infra
 import com.teamapi.palette.service.infra.comfy.GenerateRequest
 import com.teamapi.palette.service.infra.comfy.QueueResponse
 import com.teamapi.palette.service.infra.comfy.ws.ComfyWSBaseMessage
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
@@ -16,9 +20,11 @@ import org.springframework.web.reactive.function.client.awaitBody
 import org.springframework.web.reactive.function.client.awaitExchange
 import org.springframework.web.reactive.socket.WebSocketMessage
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
+import reactor.core.publisher.Mono
 import reactor.netty.http.client.HttpClient
 import reactor.netty.http.client.WebsocketClientSpec
 import java.net.URI
+import kotlin.random.Random
 
 @Service
 class GenerativeImageService(
@@ -39,6 +45,12 @@ class GenerativeImageService(
                     .maxFramePayloadLength(10 * 1024 * 1024)
             }.execute(URI.create("wss://comfy.paletteapp.xyz/ws?prompt=${body.promptId}")) {
                 mono {
+                    val keepAlive = async {
+                        while (isActive && it.isOpen) {
+                            delay(10000L)
+                            it.send(Mono.just(it.textMessage(Random.nextInt().toString()))).awaitSingle()
+                        }
+                    }
                     it.receive()
                         .doOnNext { it.retain() } // keep the message. so we can use payloadAsText
                         .asFlow()
@@ -62,6 +74,11 @@ class GenerativeImageService(
                                 // message death
                             }
                         }
+                    try {
+                        keepAlive.cancelAndJoin()
+                    } catch (e: Throwable) {
+                        // ignored
+                    }
                 }.then()
             }.awaitSingle()
             awaitClose()
