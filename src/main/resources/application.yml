@@ -18,6 +18,8 @@ spring:
       openai:
         api-key: ${OPENAI_APIKEY}
         endpoint: ${OPENAI_ENDPOINT}
+    anthropic:
+      api-key: ${CLAUDE_APIKEY}
   mail:
     host: ${SMTP_HOST}
     port: ${SMTP_PORT}
