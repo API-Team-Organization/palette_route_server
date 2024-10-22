@@ -1,11 +1,12 @@
 package com.teamapi.palette.util
 
-import com.teamapi.palette.config.PaletteProperties
+import com.teamapi.palette.config.properties.PaletteProperties
 import com.teamapi.palette.dto.infra.req.*
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -14,7 +15,8 @@ import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitExchange
+import org.springframework.web.reactive.function.client.awaitExchangeOrNull
+import java.util.concurrent.Executors
 
 @Component
 class ExceptionReporter(
@@ -22,15 +24,17 @@ class ExceptionReporter(
     private val webClient: WebClient,
     private val mapper: Json
 ) {
-    fun doReport(e: Exception) {
-        CoroutineScope(Dispatchers.Unconfined).async {
+    private val dispatcher = Executors.newCachedThreadPool().asCoroutineDispatcher()
+
+    fun doReport(e: Throwable) {
+        CoroutineScope(dispatcher).async {
             reportException(null, e)
         }.invokeOnCompletion {
             it?.printStackTrace()
         }
     }
 
-    suspend fun reportException(url: String? = null, e: Exception) {
+    suspend fun reportException(url: String? = null, e: Throwable) {
         val msg = DiscordMessage(
             embeds = listOf(
                 DiscordEmbed(
@@ -92,8 +96,8 @@ class ExceptionReporter(
             .header("User-Agent", "DiscordBot (https://paletteapp.xyz, 1.0.0)")
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .body(BodyInserters.fromMultipartData(multipartBodyBuilder.build()))
-            .awaitExchange {
-                it.releaseBody().awaitSingle()
+            .awaitExchangeOrNull {
+                it.releaseBody().awaitSingleOrNull()
             }
     }
 }
