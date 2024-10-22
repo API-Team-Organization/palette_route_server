@@ -13,8 +13,10 @@ import com.teamapi.palette.repository.qna.QnARepository
 import com.teamapi.palette.repository.room.RoomRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import com.teamapi.palette.service.infra.ChatEmitService
-import com.teamapi.palette.service.infra.GenerativeChatService
+import com.teamapi.palette.service.adapter.ChatEmitAdapter
+import com.teamapi.palette.service.adapter.GenerativeChatAdapter
+import com.teamapi.palette.service.infra.GenerativeImageService
+import com.teamapi.palette.util.ExceptionReporter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -28,9 +30,11 @@ class RoomService(
     private val roomRepository: RoomRepository,
     private val chatRepository: ChatRepository,
     private val qnaRepository: QnARepository,
-    private val chatEmitService: ChatEmitService,
+    private val chatEmitAdapter: ChatEmitAdapter,
     private val sessionHolder: SessionHolder,
-    private val generativeChatService: GenerativeChatService,
+    private val generativeChatAdapter: GenerativeChatAdapter,
+    private val generativeImageService: GenerativeImageService,
+    private val exceptionReporter: ExceptionReporter,
 ) {
     private val log = LoggerFactory.getLogger(RoomService::class.java)
 
@@ -71,16 +75,19 @@ class RoomService(
                 )
             )
 
-            val completion = generativeChatService.roomWelcomeMessage()
+            val completion = generativeChatAdapter.roomExecutiveQuestion(
+                createdQnA.qna.find { it.promptName == "aspect_ratio" }!!,
+                listOf("gpt|welcome_palette", "gpt|generate_process_start")
+            )
 
-            chatEmitService.emitChat(
+            chatEmitAdapter.emitChat(
                 Chat(
                     datetime = Clock.System.now(),
                     resource = ChatState.PROMPT,
                     roomId = room.id,
                     userId = me,
                     isAi = true,
-                    message = completion.choices.random().message.content,
+                    message = completion,
                     promptId = createdQnA.qna.find { it.promptName == "aspect_ratio" }!!.id
                 )
             )
@@ -91,6 +98,32 @@ class RoomService(
         }
 
         return RoomResponse(room.id!!, room.title, null)
+    }
+
+    suspend fun regenerate(roomId: Long) {
+        val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
+        room.validateUser(sessionHolder)
+
+        val me = sessionHolder.me()
+        val qna = qnaRepository.getQnAByRoomId(roomId)!!
+
+        chatEmitAdapter.emitChat(
+            Chat(
+                resource = ChatState.CHAT,
+                roomId = room.id!!,
+                userId = me,
+                isAi = true,
+                message = "포스터 이미지를 재생성 중입니다..."
+            )
+        )
+
+        CoroutineScope(Dispatchers.Unconfined).async {
+            generativeImageService.generateImage(qna, room, me)
+        }.invokeOnCompletion {
+            it?.let {
+                exceptionReporter.doReport(it)
+            }
+        }
     }
 
     suspend fun getQnA(roomId: Long): List<QnAResponse> {

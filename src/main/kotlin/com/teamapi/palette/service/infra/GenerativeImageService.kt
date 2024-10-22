@@ -1,89 +1,111 @@
 package com.teamapi.palette.service.infra
 
-import com.teamapi.palette.service.infra.comfy.GenerateRequest
-import com.teamapi.palette.service.infra.comfy.QueueResponse
-import com.teamapi.palette.service.infra.comfy.ws.ComfyWSBaseMessage
-import kotlinx.coroutines.async
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
-import kotlinx.coroutines.reactor.mono
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import com.teamapi.palette.entity.Room
+import com.teamapi.palette.entity.chat.Chat
+import com.teamapi.palette.entity.consts.ChatState
+import com.teamapi.palette.entity.qna.ChatAnswer
+import com.teamapi.palette.entity.qna.PromptData
+import com.teamapi.palette.entity.qna.QnA
+import com.teamapi.palette.response.exception.CustomException
+import com.teamapi.palette.service.adapter.BlobSaveAdapter
+import com.teamapi.palette.service.adapter.ChatEmitAdapter
+import com.teamapi.palette.service.adapter.GenerativeChatAdapter
+import com.teamapi.palette.service.adapter.GenerativeImageAdapter
+import com.teamapi.palette.service.adapter.comfy.GenerateRequest
+import com.teamapi.palette.service.adapter.comfy.ws.GenerateMessage
+import com.teamapi.palette.service.adapter.comfy.ws.QueueInfoMessage
+import com.teamapi.palette.util.ExceptionReporter
+import com.teamapi.palette.ws.actor.SinkActor
 import org.springframework.stereotype.Service
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitBody
-import org.springframework.web.reactive.function.client.awaitExchange
-import org.springframework.web.reactive.socket.WebSocketMessage
-import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
-import reactor.core.publisher.Mono
-import reactor.netty.http.client.HttpClient
-import reactor.netty.http.client.WebsocketClientSpec
-import java.net.URI
-import kotlin.random.Random
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 @Service
 class GenerativeImageService(
-    private val client: WebClient,
-    private val mapper: Json,
+    private val actor: SinkActor,
+    private val chatEmitAdapter: ChatEmitAdapter,
+    private val generativeChatAdapter: GenerativeChatAdapter,
+    private val generativeImageAdapter: GenerativeImageAdapter,
+    private val blobSaveAdapter: BlobSaveAdapter,
+    private val exceptionReporter: ExceptionReporter,
 ) {
-    suspend fun draw(prompt: GenerateRequest): Flow<ComfyWSBaseMessage> {
-        val body = client.post()
-            .uri("https://comfy.paletteapp.xyz/gen/flux")
-            .bodyValue(mapper.encodeToString(prompt))
-            .header("content-type", "application/json")
-            .awaitExchange { it.awaitBody<QueueResponse>() }
+    @OptIn(ExperimentalEncodingApi::class)
+    suspend fun generateImage(qna: QnA, room: Room, me: Long) {
+        val release = qna.qna
 
-        println(body)
-        return callbackFlow {
-            ReactorNettyWebSocketClient(HttpClient.create()) {
-                WebsocketClientSpec.builder()
-                    .maxFramePayloadLength(10 * 1024 * 1024)
-            }.execute(URI.create("wss://comfy.paletteapp.xyz/ws?prompt=${body.promptId}")) {
-                mono {
-                    val keepAlive = async {
-                        while (isActive && it.isOpen) {
-                            delay(10000L)
-                            it.send(Mono.just(it.textMessage(Random.nextInt().toString()))).awaitSingleOrNull()
+        val title = release.find { it.promptName == "title" }!!.answer as ChatAnswer.UserInputAnswer
+        val explain = release.find { it.promptName == "product_explanation" }!!.answer as ChatAnswer.UserInputAnswer
+        val aspectQnA = release.find { it.promptName == "aspect_ratio" }!! as PromptData.Selectable
+        val aspectAns = aspectQnA.answer!!
+        val hvQnA = release.find { it.promptName == "horizontal_or_vertical" }!! as PromptData.Selectable
+        val hvAns = hvQnA.answer!!
+        val grid = release.find { it.promptName == "title_position" }!!.answer as ChatAnswer.GridAnswer
+
+        val (width, height) = when (aspectAns.choiceId) {
+            "DISPLAY" -> 1820 to 1024
+            "PAPER" -> 1444 to 1024
+            "SQUARE" -> 1024 to 1024
+            else -> 1365 to 1024 // TABLET
+        }
+        var guaranteed: String? = null
+        try {
+            val prompt = generativeChatAdapter.createPrompt(explain.input)
+            println(prompt)
+
+            val generated = generativeImageAdapter.draw(
+                GenerateRequest(
+                    title.input,
+                    grid.choice[0],
+                    if (hvAns.choiceId == "HORIZONTAL") width else height,
+                    if (hvAns.choiceId == "HORIZONTAL") height else width,
+                    prompt
+                )
+            )
+
+            generated.collect {
+                when (it) {
+                    is QueueInfoMessage -> {
+                        actor.addQueue(room.id!!, it.position)
+                    }
+                    is GenerateMessage -> {
+                        if (it.result) {
+                            guaranteed = it.image!!
                         }
                     }
-                    it.receive()
-                        .doOnNext { it.retain() } // keep the message. so we can use payloadAsText
-                        .asFlow()
-                        .cancellable()
-                        .catch {
-                            it.printStackTrace()
-                            println("err 🫨")
-                        }
-                        .onCompletion {
-                            it?.printStackTrace()
-                            println("close")
-                            this@callbackFlow.close()
-                        }
-                        .filter { it.type == WebSocketMessage.Type.TEXT }
-                        .collect {
-                            try {
-                                send(mapper.decodeFromString<ComfyWSBaseMessage>(it.payloadAsText))
-                                it.release()
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                // message death
-                            }
-                        }
-                    try {
-                        keepAlive.cancelAndJoin()
-                    } catch (e: Throwable) {
-                        // ignored
-                    }
-                }.then()
-            }.awaitSingle()
-            awaitClose()
+                }
+            }
+        } catch (e: Exception) {
+            exceptionReporter.reportException("Error Generating Image", e)
+            e.printStackTrace()
+            guaranteed = null
+        }
+        if (guaranteed == null) {
+            chatEmitAdapter.emitChat(
+                Chat(
+                    resource = ChatState.CHAT,
+                    roomId = room.id!!,
+                    userId = me,
+                    isAi = true,
+                    message = "이미지를 생성하는 도중 오류가 발생하였어요. ;.;"
+                )
+            )
+            return
+        }
+
+        try {
+            val uploaded = blobSaveAdapter.save(Base64.decode(guaranteed!!))
+
+            chatEmitAdapter.emitChat(
+                Chat(
+                    resource = ChatState.IMAGE,
+                    roomId = room.id!!,
+                    userId = me,
+                    isAi = true,
+                    message = uploaded.blobUrl
+                )
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
-
 }

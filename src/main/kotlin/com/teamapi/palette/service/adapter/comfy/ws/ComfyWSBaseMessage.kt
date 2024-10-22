@@ -1,4 +1,4 @@
-package com.teamapi.palette.service.infra.comfy.ws
+package com.teamapi.palette.service.adapter.comfy.ws
 
 import com.teamapi.palette.util.get
 import com.teamapi.palette.util.str

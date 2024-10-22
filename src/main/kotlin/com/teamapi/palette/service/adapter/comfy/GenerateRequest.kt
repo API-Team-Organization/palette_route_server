@@ -1,4 +1,4 @@
-package com.teamapi.palette.service.infra.comfy
+package com.teamapi.palette.service.adapter.comfy
 
 import kotlinx.serialization.Serializable
 

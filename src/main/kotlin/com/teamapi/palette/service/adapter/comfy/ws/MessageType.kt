@@ -1,4 +1,4 @@
-package com.teamapi.palette.service.infra.comfy.ws
+package com.teamapi.palette.service.adapter.comfy.ws
 
 enum class MessageType {
     QUEUE_STATUS,

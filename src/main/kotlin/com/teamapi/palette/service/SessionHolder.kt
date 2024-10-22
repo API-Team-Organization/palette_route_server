@@ -21,7 +21,7 @@ class SessionHolder {
     private suspend fun getServerWebExchange(): ServerWebExchange {
         return Mono.deferContextual {
             Mono.just(it.get(ServerWebExchange::class.java))
-        }.awaitSingle()
+        }.awaitSingleOrNull() ?: throw CustomException(ErrorCode.INVALID_SESSION)
     }
 
     suspend fun getWebSession(): WebSession {

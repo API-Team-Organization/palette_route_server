@@ -1,4 +1,4 @@
-package com.teamapi.palette.service.infra
+package com.teamapi.palette.service.adapter
 
 import com.teamapi.palette.entity.chat.Chat
 import com.teamapi.palette.repository.chat.ChatRepository
@@ -6,7 +6,7 @@ import com.teamapi.palette.ws.actor.SinkActor
 import org.springframework.stereotype.Service
 
 @Service
-class ChatEmitService(
+class ChatEmitAdapter(
     private val chatRepository: ChatRepository,
     private val actor: SinkActor,
 ) {

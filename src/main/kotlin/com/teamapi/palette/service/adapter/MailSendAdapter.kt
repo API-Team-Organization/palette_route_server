@@ -1,4 +1,4 @@
-package com.teamapi.palette.service.infra
+package com.teamapi.palette.service.adapter
 
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
@@ -14,7 +14,7 @@ import kotlin.random.Random
 import kotlin.random.nextInt
 
 @Component
-class MailSendService(private val mailSender: JavaMailSender) {
+class MailSendAdapter(private val mailSender: JavaMailSender) {
     companion object {
         const val MAIL_TEMPLATE = """<!DOCTYPE html>
 <html lang="ko">
@@ -96,7 +96,7 @@ class MailSendService(private val mailSender: JavaMailSender) {
     </div>
 </body>
 </html>"""
-        private val log = LoggerFactory.getLogger(MailSendService::class.java)
+        private val log = LoggerFactory.getLogger(MailSendAdapter::class.java)
     }
 
     suspend fun sendEmail(toMail: String, code: String) {
