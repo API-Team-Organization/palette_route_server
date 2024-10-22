@@ -5,4 +5,5 @@ import com.teamapi.palette.entity.qna.QnA
 interface QnARepository {
     suspend fun getQnAByRoomId(roomId: Long): QnA?
     suspend fun create(prompt: QnA): QnA
+    suspend fun deleteAllByRoomId(roomId: Long): Boolean
 }

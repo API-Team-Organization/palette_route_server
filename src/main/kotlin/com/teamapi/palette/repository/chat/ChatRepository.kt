@@ -11,4 +11,5 @@ interface ChatRepository {
     suspend fun getLatestMessageMapById(roomIds: List<Long>): Map<Long, String?>
     suspend fun getLatestChatByRoomId(roomId: Long): Chat?
     suspend fun create(chat: Chat): Chat
+    suspend fun deleteAllByRoomId(roomId: Long): Boolean
 }

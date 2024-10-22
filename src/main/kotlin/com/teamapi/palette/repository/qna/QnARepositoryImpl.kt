@@ -25,4 +25,10 @@ class QnARepositoryImpl(
         return collection.find(QnA::roomId eq roomId)
             .firstOrNull()
     }
+
+    override suspend fun deleteAllByRoomId(roomId: Long): Boolean {
+        val collection = mongo.getCollection<QnA>(MongoDatabases.QNA)
+
+        return collection.deleteMany(QnA::roomId eq roomId).wasAcknowledged()
+    }
 }

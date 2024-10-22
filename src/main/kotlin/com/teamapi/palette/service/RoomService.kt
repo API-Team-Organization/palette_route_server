@@ -156,6 +156,9 @@ class RoomService(
         val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
 
-        return roomRepository.delete(room)
+        chatRepository.deleteAllByRoomId(roomId)
+        qnaRepository.deleteAllByRoomId(roomId)
+
+        roomRepository.delete(room)
     }
 }

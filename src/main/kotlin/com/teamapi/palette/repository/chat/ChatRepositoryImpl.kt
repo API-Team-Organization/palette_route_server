@@ -79,4 +79,10 @@ class ChatRepositoryImpl(
             FindOneAndReplaceOptions().returnDocument(ReturnDocument.AFTER).upsert(true)
         )!!
     }
+
+    override suspend fun deleteAllByRoomId(roomId: Long): Boolean {
+        val collection = mongo.getCollection<Chat>(MongoDatabases.CHAT)
+
+        return collection.deleteMany(Chat::roomId eq roomId).wasAcknowledged()
+    }
 }
