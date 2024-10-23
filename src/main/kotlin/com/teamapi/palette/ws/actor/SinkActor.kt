@@ -50,11 +50,15 @@ class SinkActor(
     }
 
     fun isGenerating(roomId: Long) = generates[roomId]
-    fun setGenerating(roomId: Long, curr: Boolean, pos: Int) {
-        val prev = isGenerating(roomId) != null
-        if (curr != prev) {
-            if (curr) generates[roomId] = pos
-            else generates.remove(roomId)
+    fun setGenerating(roomId: Long, pos: Int) {
+        synchronized(generates) {
+            generates.remove(roomId)
+            generates[roomId] = pos
+        }
+    }
+    fun clearGenerating(roomId: Long) {
+        synchronized(generates) {
+            generates.remove(roomId)
         }
     }
 

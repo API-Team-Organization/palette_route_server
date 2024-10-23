@@ -78,13 +78,13 @@ class GenerativeImageService(
             generated.collect {
                 when (it) {
                     is QueueInfoMessage -> {
-                        actor.setGenerating(room.id!!, true, it.position)
+                        actor.setGenerating(room.id!!, it.position)
                         actor.addQueue(room.id, it.position, true)
                         println("${room.id}: ${it.position}")
                     }
                     is GenerateMessage -> {
-                        actor.setGenerating(room.id!!, false, -1)
-                        actor.addQueue(room.id, -1, true)
+                        actor.clearGenerating(room.id!!)
+                        actor.addQueue(room.id, -1, false)
                         if (it.result) {
                             guaranteed = it.image!!
                         }
