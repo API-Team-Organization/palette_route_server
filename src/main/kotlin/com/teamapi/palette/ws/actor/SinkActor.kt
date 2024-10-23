@@ -55,10 +55,6 @@ class SinkActor(
         if (curr != prev) {
             if (curr) generates[roomId] = pos
             else generates.remove(roomId)
-
-            CoroutineScope(Dispatchers.Unconfined).launch {
-                addQueue(roomId, pos, curr)
-            }.start()
         }
     }
 
