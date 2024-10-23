@@ -14,6 +14,7 @@ data class NewChatMessage(
     val roomId: Long,
     val userId: Long,
     val isAi: Boolean,
+    val regenScope: Boolean,
     val promptId: String?,
 ) : BaseResponseMessage {
     override val type = MessageType.NEW_CHAT
@@ -27,6 +28,7 @@ data class NewChatMessage(
             chat.roomId,
             chat.userId,
             chat.isAi,
+            chat.regenScope,
             chat.promptId,
         )
     }
