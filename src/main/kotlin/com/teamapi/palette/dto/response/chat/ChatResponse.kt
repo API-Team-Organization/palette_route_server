@@ -13,5 +13,6 @@ data class ChatResponse(
     val roomId: Long,
     val userId: Long,
     val isAi: Boolean,
+    val regenScope: Boolean,
     val promptId: String?,
 )
