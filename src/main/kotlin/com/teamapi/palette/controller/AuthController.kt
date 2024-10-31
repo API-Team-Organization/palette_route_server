@@ -1,10 +1,10 @@
 package com.teamapi.palette.controller
 
 import com.teamapi.palette.annotations.SwaggerRequireAuthorize
-import com.teamapi.palette.dto.auth.EmailVerifyRequest
-import com.teamapi.palette.dto.auth.LoginRequest
-import com.teamapi.palette.dto.auth.RegisterRequest
-import com.teamapi.palette.dto.user.PasswordUpdateRequest
+import com.teamapi.palette.dto.request.auth.EmailVerifyRequest
+import com.teamapi.palette.dto.request.auth.LoginRequest
+import com.teamapi.palette.dto.request.auth.RegisterRequest
+import com.teamapi.palette.dto.request.user.PasswordUpdateRequest
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.service.AuthService
 import com.teamapi.palette.service.SessionHolder

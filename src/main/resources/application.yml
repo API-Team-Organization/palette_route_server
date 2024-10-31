@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: palette
+  data:
+    mongodb:
+      uri: ${MONGO_CONNECTION}
+      database: ${DB_NAME}
+    redis:
+      repositories:
+        enabled: false
+      url: redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
+  r2dbc:
+    url: r2dbc:${R2DBC_DIALECT}://${R2DBC_HOST}:${R2DBC_PORT}/${DB_NAME}
+    username: ${R2DBC_USERNAME}
+    password: ${R2DBC_PASSWORD}
+  ai:
+    azure:
+      openai:
+        api-key: ${OPENAI_APIKEY}
+        endpoint: ${OPENAI_ENDPOINT}
+    anthropic:
+      api-key: ${CLAUDE_APIKEY}
+  mail:
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT}
+    protocol: smtp
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          timeout: 15000
+          starttls:
+            enable: true
+  jooq:
+    sql-dialect: ${R2DBC_DIALECT}
+  cloud:
+    azure:
+      storage:
+        blob:
+          endpoint: ${AZURE_STORAGE_ENDPOINT}
+          connection-string: ${AZURE_STORAGE_CONNECTION_STRING}
+
+springdoc:
+  enable-kotlin: true
+  enable-spring-security: true
+  swagger-ui:
+    with-credentials: true
+    doc-expansion: none
+    persist-authorization: true
+    path: swagger
+  use-fqn: true
+  webjars:
+    prefix: external
+
+logging:
+  level:
+    org.jooq: trace
+    org.springframework.r2dbc: DEBUG
+
+palette:
+  discord-webhook: ${DISCORD_WEBHOOK}

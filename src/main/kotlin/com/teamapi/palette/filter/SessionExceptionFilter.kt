@@ -1,13 +1,16 @@
 package com.teamapi.palette.filter
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.teamapi.palette.response.ErrorCode
-import com.teamapi.palette.response.Response
+import com.teamapi.palette.response.ErrorResponse
 import com.teamapi.palette.response.ResponseCode
 import com.teamapi.palette.response.exception.CustomException
+import com.teamapi.palette.util.ExceptionReporter
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
+import org.springframework.core.codec.EncodingException
 import org.springframework.http.MediaType
 import org.springframework.http.server.reactive.ServerHttpResponse
 import org.springframework.security.authentication.BadCredentialsException
@@ -21,7 +24,8 @@ import java.net.URLDecoder
 
 @Component
 class SessionExceptionFilter(
-    private val objectMapper: ObjectMapper
+    private val objectMapper: Json,
+    private val reporter: ExceptionReporter
 ) : CoWebFilter(), Ordered {
     private val log = LoggerFactory.getLogger(SessionExceptionFilter::class.java)
     override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE
@@ -31,8 +35,7 @@ class SessionExceptionFilter(
         }
 
         if (caught.isFailure) {
-            val e = caught.exceptionOrNull()
-            when (e) {
+            when (val e = caught.exceptionOrNull()) {
                 is CustomException -> {
                     return exchange.response.writeJson(e.responseCode, *e.formats)
                 }
@@ -51,8 +54,21 @@ class SessionExceptionFilter(
                     return exchange.response.writeJson(ErrorCode.INVALID_CREDENTIALS)
                 }
 
+                is EncodingException -> {
+                    log.error("Error on Serializing response", e)
+                    reporter.reportException("${exchange.request.method.name()} ${exchange.request.path.value()}", e)
+                    try {
+                        return exchange.response.writeJson(ErrorCode.INTERNAL_SERVER_EXCEPTION)
+                    } catch (e: UnsupportedOperationException) {
+                        // NO-OP
+
+                        log.error("Response Generation failed")
+                    }
+                }
+
                 is Exception -> {
-                    log.error("WTFF", e)
+                    e.printStackTrace()
+                    reporter.reportException("${exchange.request.method.name()} ${exchange.request.path.value()}", e)
                     return exchange.response.writeJson(ErrorCode.INTERNAL_SERVER_EXCEPTION)
                 }
             }
@@ -66,11 +82,7 @@ class SessionExceptionFilter(
         writeWith(
             Mono.just(
                 bufferFactory().wrap(
-                    objectMapper.writeValueAsBytes(
-                        Response(
-                            responseCode.statusCode.value(), responseCode.message.format(*format)
-                        )
-                    )
+                    objectMapper.encodeToString(ErrorResponse.ofRaw(responseCode, *format)).toByteArray()
                 )
             )
         ).awaitSingleOrNull()

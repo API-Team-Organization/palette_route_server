@@ -9,10 +9,13 @@ import org.springframework.web.server.session.WebSessionIdResolver
 @Configuration
 @EnableRedisWebSession(maxInactiveIntervalInSeconds = 60 * 60 * 3) // 3h
 class SessionConfig {
+    companion object {
+        private const val SESSION_HEADER = "x-auth-Token"
+    }
     @Bean // change or no
     fun webSessionIdResolver(): WebSessionIdResolver {
         val sessionIdResolver = HeaderWebSessionIdResolver()
-        sessionIdResolver.headerName = "X-AUTH-Token"
+        sessionIdResolver.headerName = SESSION_HEADER
         return sessionIdResolver
-    }   
+    }
 }

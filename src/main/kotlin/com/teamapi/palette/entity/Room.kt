@@ -7,13 +7,13 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
 
-@Table
+@Table("tbl_room")
 data class Room(
     @Id
     val id: Long? = null,
-    val title: String? = "New Chat",
     @Column("user_id")
-    val userId: Long
+    val userId: Long,
+    val title: String? = "New Chat",
 ) {
     suspend fun validateUser(sessionHolder: SessionHolder): Room {
         val me = sessionHolder.me()

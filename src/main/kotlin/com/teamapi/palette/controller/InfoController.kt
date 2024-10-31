@@ -1,8 +1,8 @@
 package com.teamapi.palette.controller
 
 import com.teamapi.palette.annotations.SwaggerRequireAuthorize
-import com.teamapi.palette.dto.user.UpdateRequest
-import com.teamapi.palette.dto.user.UserResponse
+import com.teamapi.palette.dto.request.user.UserUpdateRequest
+import com.teamapi.palette.dto.response.user.UserResponse
 import com.teamapi.palette.response.Response
 import com.teamapi.palette.response.ResponseBody
 import com.teamapi.palette.service.UserService
@@ -23,7 +23,7 @@ class InfoController(
 
     @PatchMapping("/me")
     suspend fun updateInfo(
-        @RequestBody request: UpdateRequest
+        @RequestBody request: UserUpdateRequest
     ): ResponseEntity<Response> {
         userService.update(request)
         return Response.ok("유저 수정 성공")
