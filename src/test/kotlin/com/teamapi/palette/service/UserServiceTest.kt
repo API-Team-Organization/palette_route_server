@@ -1,6 +1,6 @@
 package com.teamapi.palette.service
 
-import com.teamapi.palette.dto.user.UpdateRequest
+import com.teamapi.palette.dto.request.user.UserUpdateRequest
 import com.teamapi.palette.entity.User
 import com.teamapi.palette.entity.consts.UserState
 import com.teamapi.palette.repository.UserRepository
@@ -8,8 +8,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.*
 import org.junit.jupiter.api.Test
-import java.time.LocalDate
 
 class UserServiceTest {
     private val userRepository = mockk<UserRepository>()
@@ -19,7 +19,7 @@ class UserServiceTest {
         email = "test@test.com",
         password = "test",
         username = "test",
-        birthDate = LocalDate.now(),
+        birthDate = LocalDate(2010, 6, 23).toJavaLocalDate(),
         state = UserState.ACTIVE,
         id = 1
     )
@@ -38,16 +38,16 @@ class UserServiceTest {
 
     @Test
     fun update() = runBlocking {
-        val updateRequest = UpdateRequest(
+        val updateRequest = UserUpdateRequest(
             username = "updated_test",
-            birthDate = LocalDate.of(2000, 1, 1),
+            birthDate = LocalDate(2000, 1, 1)
         )
 
         val updatedUser = User(
             email = "test@test.com",
             password = "test",
             username = "updated_test",
-            birthDate = LocalDate.of(2000, 1, 1),
+            birthDate = LocalDate(2000, 1, 1).toJavaLocalDate(),
             state = UserState.ACTIVE,
             id = 1
         )
