@@ -25,6 +25,7 @@ object WSMessageSerializer : JsonContentPolymorphicSerializer<ComfyWSBaseMessage
         return when (mt) {
             MessageType.QUEUE_STATUS -> QueueInfoMessage.serializer()
             MessageType.GENERATE_FINISH -> GenerateMessage.serializer()
+            MessageType.IMAGE_PROGRESS -> ImageProgressMessage.serializer()
         }
     }
 }
