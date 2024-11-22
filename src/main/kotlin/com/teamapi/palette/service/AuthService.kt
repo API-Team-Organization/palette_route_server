@@ -40,7 +40,6 @@ class AuthService(
 
         val auth = createPreAuthorizedToken(user.email)
         return updateSessionWithAuthenticate(auth)
-
     }
 
     private suspend fun createVerifyCode(user: User) {

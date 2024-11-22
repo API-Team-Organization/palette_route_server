@@ -4,6 +4,7 @@ import com.teamapi.palette.entity.chat.Chat
 import com.teamapi.palette.ws.dto.WSRoomMessage
 import com.teamapi.palette.ws.dto.res.NewChatMessage
 import com.teamapi.palette.ws.dto.res.GenerateStatus
+import com.teamapi.palette.ws.dto.res.ImageProgressMessage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
@@ -122,6 +123,9 @@ sealed interface SinkMessages {
     }
     data class AddQueuePosition(val roomId: Long, val position: Int, val generating: Boolean) : SinkMessages, ActorCodable {
         override fun toActorMessage() = WSRoomMessage(roomId, GenerateStatus(position, generating))
+    }
+    data class ImageProgress(val roomId: Long, val value: Int, val max: Int) : SinkMessages, ActorCodable {
+        override fun toActorMessage() = WSRoomMessage(roomId, ImageProgressMessage(value, max))
     }
 }
 

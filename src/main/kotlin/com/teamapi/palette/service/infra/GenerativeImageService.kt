@@ -12,9 +12,11 @@ import com.teamapi.palette.service.adapter.GenerativeChatAdapter
 import com.teamapi.palette.service.adapter.GenerativeImageAdapter
 import com.teamapi.palette.service.adapter.comfy.GenerateRequest
 import com.teamapi.palette.service.adapter.comfy.ws.GenerateMessage
+import com.teamapi.palette.service.adapter.comfy.ws.ImageProgressMessage
 import com.teamapi.palette.service.adapter.comfy.ws.QueueInfoMessage
 import com.teamapi.palette.util.ExceptionReporter
 import com.teamapi.palette.ws.actor.SinkActor
+import com.teamapi.palette.ws.actor.SinkMessages
 import org.springframework.stereotype.Service
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -76,18 +78,22 @@ class GenerativeImageService(
             )
 
             generated.collect {
+                room.id!!
                 when (it) {
                     is QueueInfoMessage -> {
-                        actor.setGenerating(room.id!!, it.position)
+                        actor.setGenerating(room.id, it.position)
                         actor.addQueue(room.id, it.position, true)
                         println("${room.id}: ${it.position}")
                     }
                     is GenerateMessage -> {
-                        actor.clearGenerating(room.id!!)
+                        actor.clearGenerating(room.id)
                         actor.addQueue(room.id, -1, false)
                         if (it.result) {
                             guaranteed = it.image!!
                         }
+                    }
+                    is ImageProgressMessage -> {
+                        actor.send(SinkMessages.ImageProgress(room.id, it.value, it.max))
                     }
                 }
             }

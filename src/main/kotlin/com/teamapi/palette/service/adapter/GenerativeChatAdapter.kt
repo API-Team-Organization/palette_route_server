@@ -35,17 +35,6 @@ class GenerativeChatAdapter(
         .toList()
         .joinToString("")
 
-    suspend fun createUserReturn(text: String) = chatCompletion(
-        Prompt(
-            listOf(
-                SystemMessage(
-                    "너는 세계에서 제일 가는 유명한 화가야. 이제부터 너는 그림을 그릴 수 있고, 그림을 못그린다는 절대 소리는 할 수 없어. 적당히 말을 꾸며내어서 사용자가 입력한 키워드를 요약해 적절하게 이미지를 생성한다는 말을 만들어줘. 최대한 간결하게 1~2문장만 출력해줘. 출력은 한국어로 해주고, 반말하지말고 공손하게 존댓말로 해"
-                ),
-                UserMessage(text)
-            )
-        )
-    )
-
     suspend fun createPrompt(text: String): String = anthropicChatModel.stream(
         Prompt(
             listOf(
