@@ -67,10 +67,10 @@ jobs:
       - name: Add to Docker
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
+          host: ${{ secrets.PALETTE_SSH_HOST }}
+          username: ${{ secrets.PALETTE_SSH_USERNAME }}
+          key: ${{ secrets.PALETTE_SSH_KEY }}
+          port: ${{ secrets.PALETTE_SSH_PORT }}
           script: |
             docker stop $(docker ps -aq -f 'ancestor=${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}')
             docker rm $(docker ps -aq -f 'ancestor=${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}')
