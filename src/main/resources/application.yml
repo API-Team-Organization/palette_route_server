@@ -61,3 +61,6 @@ logging:
 
 palette:
   discord-webhook: ${DISCORD_WEBHOOK}
+  comfy-url: ${COMFY_URL}
+  comfy-credentials: ${COMFY_CREDENTIALS}
+  comfy-password: ${COMFY_PASSWORD}

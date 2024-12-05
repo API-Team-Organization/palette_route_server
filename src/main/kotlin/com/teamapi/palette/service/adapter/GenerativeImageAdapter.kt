@@ -1,5 +1,6 @@
 package com.teamapi.palette.service.adapter
 
+import com.teamapi.palette.config.properties.PaletteProperties
 import com.teamapi.palette.service.adapter.comfy.GenerateRequest
 import com.teamapi.palette.service.adapter.comfy.QueueResponse
 import com.teamapi.palette.service.adapter.comfy.ws.ComfyWSBaseMessage
@@ -15,6 +16,7 @@ import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
@@ -25,17 +27,21 @@ import reactor.core.publisher.Mono
 import reactor.netty.http.client.HttpClient
 import reactor.netty.http.client.WebsocketClientSpec
 import java.net.URI
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
 @Component
 class GenerativeImageAdapter(
     private val client: WebClient,
     private val mapper: Json,
+    private val palette: PaletteProperties
 ) {
     suspend fun draw(prompt: GenerateRequest): Flow<ComfyWSBaseMessage> {
         val body = client.post()
-            .uri("https://comfy.paletteapp.xyz/gen/flux")
+            .uri("https://${palette.comfyUrl}/gen/flux")
             .bodyValue(mapper.encodeToString(prompt))
+            .header("Authorization", "Basic ${generateAuthorization()}")
             .header("content-type", "application/json")
             .awaitExchange { it.awaitBody<QueueResponse>() }
 
@@ -43,7 +49,9 @@ class GenerativeImageAdapter(
             ReactorNettyWebSocketClient(HttpClient.create()) {
                 WebsocketClientSpec.builder()
                     .maxFramePayloadLength(10 * 1024 * 1024)
-            }.execute(URI.create("wss://comfy.paletteapp.xyz/ws?prompt=${body.promptId}")) {
+            }.execute(URI.create("wss://${palette.comfyUrl}/ws?prompt=${body.promptId}"), HttpHeaders().apply { 
+                setBasicAuth(generateAuthorization())
+            }) {
                 mono {
                     val keepAlive = async {
                         while (isActive && it.isOpen) {
@@ -67,20 +75,24 @@ class GenerativeImageAdapter(
                         .collect {
                             try {
                                 send(mapper.decodeFromString<ComfyWSBaseMessage>(it.payloadAsText))
-                                it.release()
                             } catch (e: Exception) {
                                 e.printStackTrace()
                                 // message death
+                            } finally {
+                                try {
+                                    it.release()
+                                } catch (ignored: Throwable) {}
                             }
                         }
                     try {
                         keepAlive.cancelAndJoin()
-                    } catch (e: Throwable) {
-                        // ignored
-                    }
+                    } catch (ignored: Throwable) {}
                 }.then()
             }.awaitSingle()
             awaitClose()
         }
     }
+    
+    @OptIn(ExperimentalEncodingApi::class)
+    private fun generateAuthorization() = Base64.encode("${palette.comfyCredentials}:${palette.comfyPassword}".toByteArray())
 }
