@@ -15,20 +15,21 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import org.bson.codecs.pojo.annotations.BsonId
+import org.bson.types.ObjectId
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Repository
 import java.util.Date
 
 @Repository
 class ChatRepositoryImpl(
-    private val mongo: MongoDatabase
+    mongo: MongoDatabase
 ) : ChatRepository {
     // used internally
+    private val collection = mongo.getCollection<Chat>(MongoDatabases.CHAT)
     internal data class ImageFoundResult(val message: String)
-    internal data class LastMessageResult(@BsonId val id: Long, val lastMessage: String?)
+    internal data class LastMessageResult(@BsonId val id: ObjectId, val lastMessage: String?)
 
-    override suspend fun getImagesByUserId(userId: Long, pageable: Pageable): List<String> {
-        val collection = mongo.getCollection<Chat>(MongoDatabases.CHAT)
+    override suspend fun getImagesByUserId(userId: ObjectId, pageable: Pageable): List<String> {
 
         return collection
             .find<ImageFoundResult>((Chat::userId eq userId) and (Chat::resource eq ChatState.IMAGE))
@@ -40,9 +41,7 @@ class ChatRepositoryImpl(
             .toList()
     }
 
-    override suspend fun getMessageByRoomId(roomId: Long, offset: Instant, size: Long): List<ChatResponse> {
-        val collection = mongo.getCollection<Chat>(MongoDatabases.CHAT)
-
+    override suspend fun getMessageByRoomId(roomId: ObjectId, offset: Instant, size: Long): List<ChatResponse> {
         return collection
             .find(Chat::datetime lt Date.from(offset.toJavaInstant()) and (Chat::roomId eq roomId))
             .sort(Chat::datetime.desc())
@@ -51,9 +50,7 @@ class ChatRepositoryImpl(
             .map { it.toDto() }
     }
 
-    override suspend fun getLatestChatByRoomId(roomId: Long): Chat? {
-        val collection = mongo.getCollection<Chat>(MongoDatabases.CHAT)
-
+    override suspend fun getLatestChatByRoomId(roomId: ObjectId): Chat? {
         return collection
             .find(Chat::roomId eq roomId)
             .sort(Chat::datetime.desc())
@@ -61,9 +58,7 @@ class ChatRepositoryImpl(
             .firstOrNull()
     }
 
-    override suspend fun getLatestMessageMapById(roomIds: List<Long>): Map<Long, String?> {
-        val collection = mongo.getCollection<Chat>(MongoDatabases.CHAT)
-
+    override suspend fun getLatestMessageMapById(roomIds: List<ObjectId>): Map<ObjectId, String?> {
         return collection.aggregate<LastMessageResult>(
             Aggregates.match((Chat::roomId `in` roomIds) and (Chat::resource ne ChatState.IMAGE)),
             Aggregates.group(Chat::roomId.literal, Chat::message.getLastAs("lastMessage")),
@@ -71,8 +66,6 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun create(chat: Chat): Chat {
-        val collection = mongo.getCollection<Chat>(MongoDatabases.CHAT)
-
         return collection.findOneAndReplace(
             Chat::id eq chat.id,
             chat,
@@ -80,9 +73,7 @@ class ChatRepositoryImpl(
         )!!
     }
 
-    override suspend fun deleteAllByRoomId(roomId: Long): Boolean {
-        val collection = mongo.getCollection<Chat>(MongoDatabases.CHAT)
-
+    override suspend fun deleteAllByRoomId(roomId: ObjectId): Boolean {
         return collection.deleteMany(Chat::roomId eq roomId).wasAcknowledged()
     }
 }

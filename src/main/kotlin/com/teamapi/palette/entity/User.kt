@@ -1,23 +1,25 @@
 package com.teamapi.palette.entity
 
 import com.teamapi.palette.entity.consts.UserState
-import org.springframework.data.annotation.Id
-import org.springframework.data.relational.core.mapping.Column
-import org.springframework.data.relational.core.mapping.Table
-import java.time.LocalDate
+import com.teamapi.palette.repository.mongo.MongoDatabases
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import org.bson.types.ObjectId
+import kotlinx.datetime.LocalDate
 
-@Table("tbl_user")
+@Serializable
+@SerialName(MongoDatabases.USER)
 data class User(
     val email: String,
     val password: String, // hashed
     val username: String,
 
-    @Column("birth_date")
     val birthDate: LocalDate,
 
-    @Column
     val state: UserState = UserState.CREATED,
 
-    @Id
-    val id: Long? = null
+    @SerialName("_id")
+    @Contextual
+    val id: ObjectId = ObjectId.get(),
 )

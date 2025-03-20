@@ -36,8 +36,8 @@ class CustomWebSocketHandler(
         }.then()
     }
 
-    fun getRoomIdFromUrl(url: URI): Long? {
-        return url.path.let { it.substring(it.lastIndexOf('/') + 1) }.toLongOrNull()
+    fun getRoomIdFromUrl(url: URI): String? {
+        return url.path.let { it.substring(it.lastIndexOf('/') + 1) }
     }
 
     @OptIn(ObsoleteCoroutinesApi::class)

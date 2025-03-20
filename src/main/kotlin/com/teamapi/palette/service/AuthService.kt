@@ -6,12 +6,13 @@ import com.teamapi.palette.entity.User
 import com.teamapi.palette.entity.VerifyCode
 import com.teamapi.palette.entity.consts.UserState
 import com.teamapi.palette.service.adapter.MailSendAdapter
-import com.teamapi.palette.repository.UserRepository
+import com.teamapi.palette.repository.user.UserRepository
 import com.teamapi.palette.repository.VerifyCodeRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.bson.types.ObjectId
 import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class AuthService(
-    private val coroutineUserRepository: UserRepository,
+    private val userRepository: UserRepository,
     private val userDetailsService: ReactiveUserDetailsService,
     private val verifyCodeRepository: VerifyCodeRepository,
     private val mailSendAdapter: MailSendAdapter,
@@ -31,10 +32,10 @@ class AuthService(
     private val authManager: ReactiveAuthenticationManager,
 ) {
     suspend fun register(request: RegisterRequest) {
-        if (coroutineUserRepository.existsByEmail(request.email))
+        if (userRepository.existsByEmail(request.email))
             throw CustomException(ErrorCode.USER_ALREADY_EXISTS)
 
-        val user = coroutineUserRepository.save(request.toEntity(passwordEncoder))
+        val user = userRepository.create(request.toEntity(passwordEncoder))
 
         createVerifyCode(user) // send verify code
 
@@ -45,7 +46,7 @@ class AuthService(
     private suspend fun createVerifyCode(user: User) {
         val verifyCode = mailSendAdapter.createVerifyCode()
         mailSendAdapter.sendEmail(user.email, verifyCode)
-        verifyCodeRepository.create(VerifyCode(user.id!!, verifyCode))
+        verifyCodeRepository.create(VerifyCode(user.id.toString(), verifyCode))
     }
 
     suspend fun authenticate(email: String, password: String) {
@@ -67,12 +68,12 @@ class AuthService(
     }
 
     suspend fun passwordUpdate(request: PasswordUpdateRequest) {
-        val info = sessionHolder.me(coroutineUserRepository)
+        val info = sessionHolder.me(userRepository)
         authManager.authenticate(UsernamePasswordAuthenticationToken(info.email, request.beforePassword))
             .awaitSingleOrNull() ?: throw CustomException(ErrorCode.INVALID_CREDENTIALS)
 
-        coroutineUserRepository.save(
-            sessionHolder.me(coroutineUserRepository)
+        userRepository.create(
+            sessionHolder.me(userRepository)
                 .copy(password = passwordEncoder.encode(request.afterPassword))
         )
 
@@ -80,10 +81,10 @@ class AuthService(
     }
 
     suspend fun resign() {
-        val user = sessionHolder.me(coroutineUserRepository)
-        verifyCodeRepository.deleteById(user.id!!)
+        val user = sessionHolder.me(userRepository)
+        verifyCodeRepository.deleteById(user.id.toString())
 
-        coroutineUserRepository.save(user.copy(state = UserState.DELETED))
+        userRepository.create(user.copy(state = UserState.DELETED))
         sessionHolder.getWebSession().invalidate().awaitSingle()
     }
 
@@ -94,13 +95,13 @@ class AuthService(
 
     suspend fun verifyEmail(code: String) {
         val me = sessionHolder.me()
-        val item = verifyCodeRepository.findById(me)
+        val item = verifyCodeRepository.findById(me.toString())
             ?: throw CustomException(ErrorCode.ALREADY_VERIFIED)
 
         if (item.code != code) throw CustomException(ErrorCode.INVALID_VERIFY_CODE)
 
-        val saved = coroutineUserRepository.save(
-            coroutineUserRepository.findById(item.userId)!!
+        val saved = userRepository.create(
+            userRepository.findByIdOrNull(ObjectId(item.userId))!!
                 .copy(state = UserState.ACTIVE)
         ) // update user
 
@@ -111,12 +112,12 @@ class AuthService(
     }
 
     suspend fun resendVerifyCode() {
-        val me = sessionHolder.me(coroutineUserRepository)
+        val me = sessionHolder.me(userRepository)
 
         if (me.state == UserState.ACTIVE)
             throw CustomException(ErrorCode.ALREADY_VERIFIED)
 
-        verifyCodeRepository.deleteById(me.id!!)
+        verifyCodeRepository.deleteById(me.id.toString())
         createVerifyCode(me)
     }
 }

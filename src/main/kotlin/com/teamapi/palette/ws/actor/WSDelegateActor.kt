@@ -41,7 +41,7 @@ class WSDelegateActor(
             is DelegateMessage.DisconnectWithError -> sendAndClose(mapper, msg.error)
             is DelegateMessage.SendMessage -> send(textMessage(mapper.encodeToString(msg.data)).toMono()).awaitSingleOrNull()
             is DelegateMessage.Validate -> {
-                if (principal.username?.toLongOrNull() != msg.id) {
+                if (principal.username != msg.id) {
                     handleMessage(DelegateMessage.DisconnectWithError(ErrorCode.NOT_YOUR_ROOM), principal)
                     return
                 }
@@ -56,5 +56,5 @@ sealed interface DelegateMessage {
     data class DisconnectWithError(val error: ErrorCode) : DelegateMessage
     data class SendMessage(val data: BaseResponseMessage): DelegateMessage
     data object Close : DelegateMessage
-    data class Validate(val id: Long, val onSuccess: suspend (SinkActor) -> Unit) : DelegateMessage
+    data class Validate(val id: String, val onSuccess: suspend (SinkActor) -> Unit) : DelegateMessage
 }

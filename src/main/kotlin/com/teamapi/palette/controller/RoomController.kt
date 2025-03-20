@@ -30,14 +30,14 @@ class RoomController(
     }
 
     @PostMapping("/{roomId}/regen")
-    suspend fun regenerate(@PathVariable roomId: Long): ResponseEntity<Response> {
+    suspend fun regenerate(@PathVariable roomId: String): ResponseEntity<Response> {
         roomService.regenerate(roomId)
         return Response.ok("생성 요청 성공")
     }
 
     @PatchMapping("/{roomId}/title")
     suspend fun updateRoomTitle(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         @Valid @RequestBody request: UpdateRoomTitleRequest
     ): ResponseEntity<Response> {
         roomService.updateRoomTitle(roomId, request.title)
@@ -45,12 +45,12 @@ class RoomController(
     }
 
     @GetMapping("/{roomId}/qna")
-    suspend fun getQnAs(@PathVariable roomId: Long): ResponseEntity<ResponseBody<List<QnAResponse>>> {
+    suspend fun getQnAs(@PathVariable roomId: String): ResponseEntity<ResponseBody<List<QnAResponse>>> {
         return ResponseBody.ok("룸 내 질답 리스트 조회 완료", roomService.getQnA(roomId))
     }
 
     @DeleteMapping("/{roomId}")
-    suspend fun deleteRoom(@PathVariable roomId: Long): ResponseEntity<Response> {
+    suspend fun deleteRoom(@PathVariable roomId: String): ResponseEntity<Response> {
         roomService.deleteRoom(roomId)
         return Response.ok("룸 삭제 완료")
     }

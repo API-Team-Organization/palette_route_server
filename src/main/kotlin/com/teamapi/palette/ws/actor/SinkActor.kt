@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.reactive.asFlow
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.DisposableBean
 import org.springframework.stereotype.Component
@@ -23,9 +24,9 @@ class SinkActor(
 ) : DisposableBean {
     private val log = LoggerFactory.getLogger(SinkActor::class.java)
 
-    private val generates = HashMap<Long, Int>()
+    private val generates = HashMap<ObjectId, Int>()
     private val roomActors: MutableSet<SendChannel<RoomMessages>> = hashSetOf()
-    private val sinkWorker = CoroutineScope(Dispatchers.Unconfined).async {
+    private val sinkWorker = CoroutineScope(Dispatchers.Unconfined + SupervisorJob()).async {
         log.info("Sink Listener Working!")
         try {
             sink
@@ -44,20 +45,22 @@ class SinkActor(
                         actor.send(RoomMessages.NewChat(it.roomId, it.message))
                     }
                 }
+        } catch (e: CancellationException) {
+            //
         } catch (e: Exception) {
             e.printStackTrace()
         }
         log.info("Sink Listener dies...")
     }
 
-    fun isGenerating(roomId: Long) = generates[roomId]
-    fun setGenerating(roomId: Long, pos: Int) {
+    fun isGenerating(roomId: ObjectId) = generates[roomId]
+    fun setGenerating(roomId: ObjectId, pos: Int) {
         synchronized(generates) {
             generates.remove(roomId)
             generates[roomId] = pos
         }
     }
-    fun clearGenerating(roomId: Long) {
+    fun clearGenerating(roomId: ObjectId) {
         synchronized(generates) {
             generates.remove(roomId)
         }
@@ -96,18 +99,20 @@ class SinkActor(
         actorInstance.send(msg)
     }
 
-    suspend fun addChat(roomId: Long, message: Chat) {
+    suspend fun addChat(roomId: ObjectId, message: Chat) {
         send(SinkMessages.AddChat(roomId, message))
     }
 
-    suspend fun addQueue(roomId: Long, position: Int, generating: Boolean) {
+    suspend fun addQueue(roomId: ObjectId, position: Int, generating: Boolean) {
         send(SinkMessages.AddQueuePosition(roomId, position, generating))
     }
 
     override fun destroy() {
         roomActors.clear()
         runBlocking {
-            sinkWorker.cancelAndJoin()
+            if (sinkWorker.isActive) {
+                sinkWorker.cancelAndJoin()
+            }
         }
 
         log.info("SinkActor disposed! (destroyed: {}, active: {})", sinkWorker.isCompleted, sinkWorker.isActive)
@@ -118,13 +123,13 @@ sealed interface SinkMessages {
     data class Listen(val actor: SendChannel<RoomMessages>) : SinkMessages
     data class Dispose(val actor: SendChannel<RoomMessages>) : SinkMessages
     data object CleanUp : SinkMessages
-    data class AddChat(val roomId: Long, val message: Chat) : SinkMessages, ActorCodable {
+    data class AddChat(val roomId: ObjectId, val message: Chat) : SinkMessages, ActorCodable {
         override fun toActorMessage() = WSRoomMessage(roomId, NewChatMessage.fromDto(message.toDto()))
     }
-    data class AddQueuePosition(val roomId: Long, val position: Int, val generating: Boolean) : SinkMessages, ActorCodable {
+    data class AddQueuePosition(val roomId: ObjectId, val position: Int, val generating: Boolean) : SinkMessages, ActorCodable {
         override fun toActorMessage() = WSRoomMessage(roomId, GenerateStatus(position, generating))
     }
-    data class ImageProgress(val roomId: Long, val value: Int, val max: Int) : SinkMessages, ActorCodable {
+    data class ImageProgress(val roomId: ObjectId, val value: Int, val max: Int) : SinkMessages, ActorCodable {
         override fun toActorMessage() = WSRoomMessage(roomId, ImageProgressMessage(value, max))
     }
 }

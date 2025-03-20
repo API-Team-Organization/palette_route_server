@@ -19,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.datetime.Instant
+import org.bson.types.ObjectId
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 
@@ -38,12 +39,12 @@ class ChatService(
         return qnA.qna.find { it.answer == null }
     }
 
-    suspend fun <T : ChatAnswer> createChat(roomId: Long, message: T) {
+    suspend fun <T : ChatAnswer> createChat(roomId: String, message: T) {
         val userId = sessionHolder.me()
-        val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
+        val room = roomRepository.findByIdOrNull(ObjectId(roomId)) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
 
-        var toBeResolved = qnaRepository.getQnAByRoomId(room.id!!)!!
+        var toBeResolved = qnaRepository.getQnAByRoomId(room.id)!!
         val pendingQuestion = getPendingQuestion(toBeResolved) ?: throw CustomException(ErrorCode.QNA_INVALID_FULFILLED)
         if (pendingQuestion.type != message.type)
             throw CustomException(ErrorCode.MESSAGE_TYPE_NOT_MATCH, message.type.name, pendingQuestion.type.name)
@@ -159,12 +160,12 @@ class ChatService(
         }
     }
 
-    suspend fun getChatList(roomId: Long, lastId: String, size: Long): List<ChatResponse> {
-        val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
+    suspend fun getChatList(roomId: String, lastId: String, size: Long): List<ChatResponse> {
+        val room = roomRepository.findByIdOrNull(ObjectId(roomId)) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
 
         return chatRepository.getMessageByRoomId(
-            room.id!!,
+            room.id,
             Instant.parse(lastId),
             size
         )

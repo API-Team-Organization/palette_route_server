@@ -1,6 +1,6 @@
 package com.teamapi.palette.service
 
-import com.teamapi.palette.repository.UserRepository
+import com.teamapi.palette.repository.user.UserRepository
 import kotlinx.coroutines.reactor.mono
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.core.userdetails.User

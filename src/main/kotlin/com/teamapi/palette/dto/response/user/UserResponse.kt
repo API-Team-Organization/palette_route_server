@@ -7,14 +7,14 @@ import kotlinx.serialization.Serializable
 
 @Serializable
     data class UserResponse(
-        val id: Long,
+        val id: String,
         val name: String,
         val email: String,
         val birthDate: LocalDate
     ) {
         companion object {
             fun from(user: User): UserResponse {
-                return UserResponse(user.id!!, user.username, user.email, user.birthDate.toKotlinLocalDate())
+                return UserResponse(user.id.toString(), user.username, user.email, user.birthDate)
             }
         }
     }

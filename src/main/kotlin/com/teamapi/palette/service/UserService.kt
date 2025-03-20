@@ -2,7 +2,7 @@ package com.teamapi.palette.service
 
 import com.teamapi.palette.dto.request.user.UserUpdateRequest
 import com.teamapi.palette.dto.response.user.UserResponse
-import com.teamapi.palette.repository.UserRepository
+import com.teamapi.palette.repository.user.UserRepository
 import kotlinx.datetime.toJavaLocalDate
 import org.springframework.stereotype.Service
 
@@ -15,10 +15,10 @@ class UserService(
 
     suspend fun update(request: UserUpdateRequest) {
         val me = sessionHolder.me(userRepository)
-        userRepository.save(
+        userRepository.create(
             me.copy(
                 username = request.username ?: me.username,
-                birthDate = request.birthDate?.toJavaLocalDate() ?: me.birthDate
+                birthDate = request.birthDate ?: me.birthDate
             )
         )
     }

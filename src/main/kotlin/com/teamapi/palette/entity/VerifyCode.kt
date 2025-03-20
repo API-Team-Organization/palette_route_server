@@ -7,6 +7,6 @@ import java.io.Serializable
 @RedisHash("verify")
 data class VerifyCode(
     @Id
-    val userId: Long,
+    val userId: String,
     val code: String,
 ) : Serializable

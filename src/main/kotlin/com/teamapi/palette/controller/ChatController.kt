@@ -23,7 +23,7 @@ class ChatController(
     @PostMapping
     suspend fun createChat(
         @RequestBody request: CreateChatRequest,
-        @RequestParam("roomId") roomId: Long
+        @RequestParam("roomId") roomId: String
     ): ResponseEntity<Response> {
         chatService.createChat(roomId, request.data)
         return Response.ok("답변 요청 성공")
@@ -31,7 +31,7 @@ class ChatController(
 
     @GetMapping("/{roomId}")
     suspend fun getChatList(
-        @PathVariable("roomId") roomId: Long,
+        @PathVariable("roomId") roomId: String,
         @RequestParam(required = false) before: String = Clock.System.now().toString(),
         @RequestParam(required = false) size: Long = 25
     ): ResponseEntity<ResponseBody<List<ChatResponse>>> {

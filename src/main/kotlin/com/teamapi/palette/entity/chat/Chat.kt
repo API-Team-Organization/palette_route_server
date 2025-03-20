@@ -23,8 +23,10 @@ data class Chat(
 
     // default property
     val message: String? = null,
-    val roomId: Long,
-    val userId: Long,
+    @Contextual
+    val roomId: ObjectId,
+    @Contextual
+    val userId: ObjectId,
     val isAi: Boolean,
     val regenScope: Boolean? = false,
     @Contextual
@@ -35,8 +37,8 @@ data class Chat(
         message,
         resource,
         datetime,
-        roomId,
-        userId,
+        roomId.toString(),
+        userId.toString(),
         isAi,
         regenScope ?: false,
         promptId?.toString()

@@ -1,18 +1,22 @@
 package com.teamapi.palette.entity
 
+import com.teamapi.palette.repository.mongo.MongoDatabases
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.service.SessionHolder
-import org.springframework.data.annotation.Id
-import org.springframework.data.relational.core.mapping.Column
-import org.springframework.data.relational.core.mapping.Table
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import org.bson.types.ObjectId
 
-@Table("tbl_room")
+@Serializable
+@SerialName(MongoDatabases.ROOM)
 data class Room(
-    @Id
-    val id: Long? = null,
-    @Column("user_id")
-    val userId: Long,
+    @SerialName("_id")
+    @Contextual
+    val id: ObjectId = ObjectId.get(),
+    @Contextual
+    val userId: ObjectId,
     val title: String? = "New Chat",
 ) {
     suspend fun validateUser(sessionHolder: SessionHolder): Room {

@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
+import org.bson.types.ObjectId
 import org.springframework.stereotype.Component
 
 @Component
@@ -15,15 +16,15 @@ class WSRoomActor(
     private val roomRepository: RoomRepository,
 ) {
     @ObsoleteCoroutinesApi
-    operator fun invoke(roomId: Long, delegateActor: SendChannel<DelegateMessage>) =
+    operator fun invoke(roomId: String, delegateActor: SendChannel<DelegateMessage>) =
         CoroutineScope(Dispatchers.Unconfined).actor<RoomMessages> {
-            val roomHooked = roomRepository.findById(roomId)
+            val roomHooked = roomRepository.findByIdOrNull(ObjectId(roomId))
                 ?: return@actor delegateActor.trySend(DelegateMessage.DisconnectWithError(ErrorCode.ROOM_NOT_FOUND))
                     .let {}
 
-            delegateActor.trySend(DelegateMessage.Validate(roomHooked.userId) {
-                val generating = it.isGenerating(roomId)
-                it.addQueue(roomId, generating ?: -1, generating != null)
+            delegateActor.trySend(DelegateMessage.Validate(roomHooked.userId.toString()) {
+                val generating = it.isGenerating(roomHooked.id)
+                it.addQueue(roomHooked.id, generating ?: -1, generating != null)
             })
 
             for (msg in channel) {
@@ -39,5 +40,5 @@ class WSRoomActor(
 }
 
 sealed interface RoomMessages {
-    data class NewChat(val roomId: Long, val response: BaseResponseMessage) : RoomMessages
+    data class NewChat(val roomId: ObjectId, val response: BaseResponseMessage) : RoomMessages
 }

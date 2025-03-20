@@ -12,6 +12,7 @@ data class QnA(
     @SerialName("_id")
     @Contextual
     val id: ObjectId = ObjectId.get(),
-    val roomId: Long,
+    @Contextual
+    val roomId: ObjectId,
     val qna: List<PromptData>
 )

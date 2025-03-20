@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -40,12 +41,12 @@ class RoomService(
 
     suspend fun createRoom(): RoomResponse {
         val me = sessionHolder.me()
-        val room = roomRepository.save(Room(userId = me))
+        val room = roomRepository.create(Room(userId = me))
 
         CoroutineScope(Dispatchers.Unconfined).async {
             val createdQnA = qnaRepository.create(
                 QnA(
-                    roomId = room.id!!,
+                    roomId = room.id,
                     qna = listOf(
                         PromptData.Selectable(
                             "aspect_ratio",
@@ -97,17 +98,17 @@ class RoomService(
             }
         }
 
-        return RoomResponse(room.id!!, room.title, null)
+        return RoomResponse(room.id.toString(), room.title, null)
     }
 
-    suspend fun regenerate(roomId: Long) {
-        val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
+    suspend fun regenerate(roomId: String) {
+        val room = roomRepository.findByIdOrNull(ObjectId(roomId)) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
 
-        val regenScope = chatRepository.getLatestChatByRoomId(roomId)?.regenScope == true
+        val regenScope = chatRepository.getLatestChatByRoomId(room.id)?.regenScope == true
 
         val me = sessionHolder.me()
-        val qna = qnaRepository.getQnAByRoomId(roomId)!!
+        val qna = qnaRepository.getQnAByRoomId(room.id)!!
 
         if (qna.qna.any { it.answer == null } || !regenScope) {
             throw CustomException(ErrorCode.QNA_INVALID_NOT_FULFILLED)
@@ -116,7 +117,7 @@ class RoomService(
         chatEmitAdapter.emitChat(
             Chat(
                 resource = ChatState.CHAT,
-                roomId = room.id!!,
+                roomId = room.id,
                 userId = me,
                 isAi = true,
                 message = "포스터 이미지를 재생성 중입니다..."
@@ -132,8 +133,8 @@ class RoomService(
         }
     }
 
-    suspend fun getQnA(roomId: Long): List<QnAResponse> {
-        return qnaRepository.getQnAByRoomId(roomId)!!.qna.map {
+    suspend fun getQnA(roomId: String): List<QnAResponse> {
+        return qnaRepository.getQnAByRoomId(ObjectId(roomId))!!.qna.map {
             QnAResponse(
                 it.id.toString(),
                 it.type,
@@ -146,25 +147,25 @@ class RoomService(
 
     suspend fun getRoomList(): List<RoomResponse> {
         val me = sessionHolder.me()
-        val rooms = roomRepository.findRoomByUserId(me).toList()
+        val rooms = roomRepository.findAllByUserId(me)
 
-        val messageSearched = chatRepository.getLatestMessageMapById(rooms.map { it.id!! })
-        return rooms.map { RoomResponse(it.id!!, it.title, messageSearched[it.id]) }
+        val messageSearched = chatRepository.getLatestMessageMapById(rooms.map { it.id })
+        return rooms.map { RoomResponse(it.id.toString(), it.title, messageSearched[it.id]) }
     }
 
-    suspend fun updateRoomTitle(roomId: Long, title: String) {
-        val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
+    suspend fun updateRoomTitle(roomId: String, title: String) {
+        val room = roomRepository.findByIdOrNull(ObjectId(roomId)) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
-        roomRepository.save(room.copy(title = title))
+        roomRepository.create(room.copy(title = title))
     }
 
-    suspend fun deleteRoom(roomId: Long) {
-        val room = roomRepository.findById(roomId) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
+    suspend fun deleteRoom(roomId: String) {
+        val room = roomRepository.findByIdOrNull(ObjectId(roomId)) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
 
-        chatRepository.deleteAllByRoomId(roomId)
-        qnaRepository.deleteAllByRoomId(roomId)
+        chatRepository.deleteAllByRoomId(room.id)
+        qnaRepository.deleteAllByRoomId(room.id)
 
-        roomRepository.delete(room)
+        roomRepository.deleteById(room.id)
     }
 }

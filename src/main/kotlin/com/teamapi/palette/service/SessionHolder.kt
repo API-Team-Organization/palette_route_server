@@ -1,11 +1,12 @@
 package com.teamapi.palette.service
 
 import com.teamapi.palette.entity.User
-import com.teamapi.palette.repository.UserRepository
+import com.teamapi.palette.repository.user.UserRepository
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.bson.types.ObjectId
 import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextImpl
@@ -41,12 +42,12 @@ class SessionHolder {
         return getSecurityContext().authentication.principal as UserDetails
     }
 
-    suspend fun me(): Long {
-        return userInfo().username.toLong()
+    suspend fun me(): ObjectId {
+        return ObjectId(userInfo().username)
     }
 
     suspend fun me(repository: UserRepository): User {
-        return repository.findById(userInfo().username.toLong())
+        return repository.findByIdOrNull(me())
             ?: throw CustomException(ErrorCode.USER_NOT_FOUND)
     }
 }

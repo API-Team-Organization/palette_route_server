@@ -1,6 +1,9 @@
 package com.teamapi.palette.repository.room
 
-import org.springframework.stereotype.Repository
+import com.teamapi.palette.entity.Room
+import com.teamapi.palette.repository.mongo.MongoRepository
+import org.bson.types.ObjectId
 
-@Repository
-interface RoomRepository : RoomR2dbcRepository
+interface RoomRepository : MongoRepository<Room> {
+    suspend fun findAllByUserId(userId: ObjectId): List<Room>
+}

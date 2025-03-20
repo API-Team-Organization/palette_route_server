@@ -17,6 +17,7 @@ import com.teamapi.palette.service.adapter.comfy.ws.QueueInfoMessage
 import com.teamapi.palette.util.ExceptionReporter
 import com.teamapi.palette.ws.actor.SinkActor
 import com.teamapi.palette.ws.actor.SinkMessages
+import org.bson.types.ObjectId
 import org.springframework.stereotype.Service
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -32,7 +33,7 @@ class GenerativeImageService(
 ) {
     private val includesKorean = Regex("[ㄱ-ㅎ가-힣]")
     @OptIn(ExperimentalEncodingApi::class)
-    suspend fun generateImage(qna: QnA, room: Room, me: Long) {
+    suspend fun generateImage(qna: QnA, room: Room, me: ObjectId) {
         val release = qna.qna
 
         val title = release.find { it.promptName == "title" }!!.answer as ChatAnswer.UserInputAnswer
@@ -78,7 +79,7 @@ class GenerativeImageService(
             )
 
             generated.collect {
-                room.id!!
+                room.id
                 when (it) {
                     is QueueInfoMessage -> {
                         actor.setGenerating(room.id, it.position)
@@ -109,7 +110,7 @@ class GenerativeImageService(
                 chatEmitAdapter.emitChat(
                     Chat(
                         resource = ChatState.IMAGE,
-                        roomId = room.id!!,
+                        roomId = room.id,
                         userId = me,
                         isAi = true,
                         message = uploaded.blobUrl,
@@ -125,7 +126,7 @@ class GenerativeImageService(
         chatEmitAdapter.emitChat(
             Chat(
                 resource = ChatState.CHAT,
-                roomId = room.id!!,
+                roomId = room.id,
                 userId = me,
                 isAi = true,
                 message = "이미지를 생성하는 도중 오류가 발생하였어요. ;.;",
