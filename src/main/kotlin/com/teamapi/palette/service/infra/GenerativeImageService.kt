@@ -6,6 +6,8 @@ import com.teamapi.palette.entity.consts.ChatState
 import com.teamapi.palette.entity.qna.ChatAnswer
 import com.teamapi.palette.entity.qna.PromptData
 import com.teamapi.palette.entity.qna.QnA
+import com.teamapi.palette.response.ErrorCode
+import com.teamapi.palette.response.exception.CustomException
 import com.teamapi.palette.service.adapter.BlobSaveAdapter
 import com.teamapi.palette.service.adapter.ChatEmitAdapter
 import com.teamapi.palette.service.adapter.GenerativeChatAdapter
@@ -17,6 +19,8 @@ import com.teamapi.palette.service.adapter.comfy.ws.QueueInfoMessage
 import com.teamapi.palette.util.ExceptionReporter
 import com.teamapi.palette.ws.actor.SinkActor
 import com.teamapi.palette.ws.actor.SinkMessages
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onCompletion
 import org.bson.types.ObjectId
 import org.springframework.stereotype.Service
 import kotlin.io.encoding.Base64
@@ -51,9 +55,8 @@ class GenerativeImageService(
             else -> 1365 to 1024 // TABLET
         }
         var guaranteed: String? = null
-        try {
+        val (prompt, hasKorean) = try {
             var prompt = generativeChatAdapter.createPrompt(explain.input)
-            println(prompt)
 
             val hasKorean = includesKorean.find(title.input) != null
             if (hasKorean) {
@@ -66,6 +69,12 @@ class GenerativeImageService(
                 }
                 prompt += "Please write down the title '${title.input}', place the title typography at $posStr"
             }
+            prompt to hasKorean
+        } catch (e: Exception) {
+            exceptionReporter.reportException("Error Generating Image", e)
+            e.printStackTrace()
+            throw CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
+        }
 
             val generated = generativeImageAdapter.draw(
                 GenerateRequest(
@@ -78,8 +87,39 @@ class GenerativeImageService(
                 )
             )
 
-            generated.collect {
-                room.id
+            generated
+                .catch {
+                    chatEmitAdapter.emitChat(
+                        Chat(
+                            resource = ChatState.CHAT,
+                            roomId = room.id,
+                            userId = me,
+                            isAi = true,
+                            message = "이미지를 생성하는 도중 오류가 발생하였어요. ;.;",
+                            regenScope = true
+                        )
+                    )
+                }
+                .onCompletion {
+                    try {
+                        val uploaded = blobSaveAdapter.save(Base64.decode(guaranteed!!))
+
+                        chatEmitAdapter.emitChat(
+                            Chat(
+                                resource = ChatState.IMAGE,
+                                roomId = room.id,
+                                userId = me,
+                                isAi = true,
+                                message = uploaded.blobUrl,
+                                regenScope = true
+                            )
+                        )
+                    } catch (e: Exception) {
+                        exceptionReporter.reportException("Error sending Image", e)
+                        e.printStackTrace()
+                    }
+                }
+                .collect {
                 when (it) {
                     is QueueInfoMessage -> {
                         actor.setGenerating(room.id, it.position)
@@ -89,49 +129,16 @@ class GenerativeImageService(
                     is GenerateMessage -> {
                         actor.clearGenerating(room.id)
                         actor.addQueue(room.id, -1, false)
-                        if (it.result) {
-                            guaranteed = it.image!!
-                        }
+                        if (!it.result)
+                            throw RuntimeException("No Image Found") // it will catched in catch block
+
+                        guaranteed = it.image!!
                     }
                     is ImageProgressMessage -> {
                         actor.send(SinkMessages.ImageProgress(room.id, it.value, it.max))
                     }
                 }
             }
-        } catch (e: Exception) {
-            exceptionReporter.reportException("Error Generating Image", e)
-            e.printStackTrace()
-            guaranteed = null
-        }
-        if (guaranteed != null) {
-            try {
-                val uploaded = blobSaveAdapter.save(Base64.decode(guaranteed!!))
 
-                chatEmitAdapter.emitChat(
-                    Chat(
-                        resource = ChatState.IMAGE,
-                        roomId = room.id,
-                        userId = me,
-                        isAi = true,
-                        message = uploaded.blobUrl,
-                        regenScope = true
-                    )
-                )
-                return
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        chatEmitAdapter.emitChat(
-            Chat(
-                resource = ChatState.CHAT,
-                roomId = room.id,
-                userId = me,
-                isAi = true,
-                message = "이미지를 생성하는 도중 오류가 발생하였어요. ;.;",
-                regenScope = true
-            )
-        )
     }
 }
