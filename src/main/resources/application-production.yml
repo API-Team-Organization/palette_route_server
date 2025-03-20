@@ -2,6 +2,6 @@ server: # additional ssl settings
   ssl:
     enabled: true
     key-store-type: PKCS12
-    key-store: classpath:palette.p12
-    key-store-password: jombidev
+    key-store: file:/palette/palette.p12
+    key-store-password: ${KEYSTORE_PASSWORD}
     key-alias: palette

@@ -22,11 +22,6 @@ jobs:
           distribution: 'corretto'
           cache: gradle
 
-      - name: Create secured configurations
-        run: |
-          touch ./src/main/resources/palette.p12
-          echo '${{ secrets.PALETTE_P12 }}' | base64 --decode > ./src/main/resources/palette.p12
-
       - name: Build with Gradle
         run: |
           chmod +x gradlew
@@ -38,7 +33,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          
+
       - name: Set up QEMU
         if: github.ref == 'refs/heads/main'
         uses: docker/setup-qemu-action@v3
@@ -60,7 +55,7 @@ jobs:
 
   publish:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') && github.ref == 'refs/heads/main' }}
-    needs: [build]
+    needs: [ build ]
     runs-on: ubuntu-latest
 
     steps:
@@ -76,10 +71,15 @@ jobs:
             docker rm $(docker ps -aq -f 'ancestor=${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}')
 
             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest
-            
+
+            mkdir -p palette
+
+            touch ./palette/palette.p12
+            echo '${{ secrets.PALETTE_P12 }}' | base64 --decode > ./palette/palette.p12
+
             touch ./production.env
             echo '${{ secrets.ROUTE_ENVIRONMENT }}' | base64 --decode > ./production.env
-            
-            docker run --env-file production.env -d -p 8080:8080 --name route ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}
-            
+
+            docker run -v ./palette/:/palette/ --env-file production.env -d -p 8080:8080 --name route ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}
+
             rm ./production.env
