@@ -29,12 +29,6 @@ spring:
           timeout: 15000
           starttls:
             enable: true
-  cloud:
-    azure:
-      storage:
-        blob:
-          endpoint: ${AZURE_STORAGE_ENDPOINT}
-          connection-string: ${AZURE_STORAGE_CONNECTION_STRING}
 
 springdoc:
   enable-kotlin: true
