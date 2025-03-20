@@ -14,10 +14,6 @@ spring:
     username: ${R2DBC_USERNAME}
     password: ${R2DBC_PASSWORD}
   ai:
-    azure:
-      openai:
-        api-key: ${OPENAI_APIKEY}
-        endpoint: ${OPENAI_ENDPOINT}
     anthropic:
       api-key: ${CLAUDE_APIKEY}
   mail:
@@ -33,8 +29,6 @@ spring:
           timeout: 15000
           starttls:
             enable: true
-  jooq:
-    sql-dialect: ${R2DBC_DIALECT}
   cloud:
     azure:
       storage:

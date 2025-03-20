@@ -16,13 +16,11 @@ import reactor.core.publisher.Flux
 
 @Service
 class GenerativeChatAdapter(
-    private val openAiChatModel: StreamingChatModel,
     private val anthropicChatModel: StreamingChatModel,
 ) {
     suspend fun chatCompletion(options: Prompt): String =
-        openAiChatModel.stream(options)
+        anthropicChatModel.stream(options)
             .joinToString()
-//            .handleAzureError(mapper)
 
     private suspend fun Flux<ChatResponse>.joinToString() = asFlow()
         .map {
@@ -39,7 +37,7 @@ class GenerativeChatAdapter(
         Prompt(
             listOf(
                 SystemMessage(
-                    "Map to the 'drawable' words to help generate posters. Analyze the input to determine the overall theme and context. Select an appropriate typography style that matches the theme, considering factors such as font family, weight, and decorative elements. Describe the chosen typography style in detail, including its mood and visual characteristics. Choose a color palette that complements the subject matter and typography. Decide on the composition and layout for visual impact, incorporating the title as a prominent element. Identify key visual elements to include. Consider texture and lighting details to add depth. Craft a single paragraph prompt describing all these elements cohesively, emphasizing how the title and typography integrate with the overall design. Ensure the prompt is vivid, specific, and tailored for AI image generation. The prompt must be less than 150 words long. Output should be only: The prompt paragraph which Do not include any additional explanation, commentary. The sentence should be in English and the words should be separated by a comma: ','. The entire output should appear as if it's ready to be input into an AI image generator.\n"
+                    "Map to the 'drawable' words to help generate posters. Analyze the input to determine the overall theme and context. Select an appropriate typography style that matches the theme, considering factors such as font family, weight, and decorative elements. Describe the chosen typography style in detail, including its mood and visual characteristics. Choose a color palette that complements the subject matter and typography. Decide on the composition and layout for visual impact, incorporating the title as a prominent element. Identify key visual elements to include. Consider texture and lighting details to add depth. Craft a single paragraph prompt describing all these elements cohesively, emphasizing how the title and typography integrate with the overall design. Ensure the prompt is vivid, specific, and tailored for AI image generation. The prompt must be less than 150 words long. Output should be only: The prompt paragraph which Do not include any additional explanation, commentary. The sentence should be in English and the words should be separated by a comma: ','. The entire output should appear as if it's ready to be input into an AI image generator."
                 ),
                 UserMessage(
                     "내가 만든 오렌지 주스를 광고하고 싶어. 오렌지 과즙이 주변에 터졌으면 좋겠고, 오렌지 주스가 담긴 컵과 오렌지 주스가 있었으면 좋겠어. 배경은 집 안이였으면 좋겠어."
@@ -80,7 +78,7 @@ class GenerativeChatAdapter(
                     |우리가 내부적으로 사용하는 아이디 리스트를 너에게 줄것이다.
                     |아이디 리스트는 comma (,)로 나뉘어진 리스트이다.
                     |아이디 하나하나는 다음의 규칙을 따른다.
-                    |아이디에는 '|'가 무조건 한개 포함해야하며, 1개 초과 또는 1개 미만으로 있을 수 없다. 또한 이는 앞으로 기준점이라고 칭한다.
+                    |아이디에는 '|'를 무조건 한개 포함해야하며, 1개 초과 또는 1개 미만으로 있을 수 없다. 또한 이는 앞으로 기준점이라고 칭한다.
                     |기준점을 토대로 왼쪽에 있는 것을 '규칙', 오른쪽에 있는것을 '아이디'로 칭한다.
                     |
                     |# 규칙 정의:
@@ -91,18 +89,18 @@ class GenerativeChatAdapter(
                     |
                     |# 출력
                     |규칙이 내부 규칙이라면, 아이디에 맞는 말을 적절하게 생성하고, 질문은 붙이지 않는다.
-                    |아이디를 각각 한국어로 번역한 결과를 사용해 사용자에게 한두문장으로 '사용자 맞춤 포스터의 정보'를 적절하게 풀어서 질문하는 말을 해줘.
-                    |규칙이 내부 규칙이 아니라면 질문 할 때에는 규칙에 맞게 적절한 말을 선택해서 질문해.
-                    |내부 규칙이 다른 규칙보다 문장 앞에 위치 해야하며, 너가 하는 질문들은 자연스럽게 연결해줘.
+                    |아이디를 각각 한국어로 번역한 결과를 사용해 사용자에게 한두문장으로 '사용자 맞춤 포스터의 정보'를 적절하게 풀어서 질문하는 말을 하도록한다.
+                    |규칙이 내부 규칙이 아니라면 질문 할 때에는 규칙에 맞게 적절한 말을 선택해서 질문하도록 한다.
+                    |내부 규칙이 다른 규칙보다 문장 앞에 위치 해야하며, 너가 하는 질문들은 자연스럽게 연결해야한다.
                     |
                     |# 출력 제한사항
                     |**내부 규칙은 사용자에게 언급해서는 안된다.**
-                    |**내가 요구한 것 외에 다른 말은 일체 하면 안된다.**
-                    |우리가 이미 예시를 제공하고 있으니, 추가적인 예시는 제공하지 말아야한다. 제공 할 필요도 없고, 제공하려는 시도를 해서는 안된다.
+                    |**요구사항 외에 다른 말은 일체 하면 안된다.**
+                    |귀 사에서 이미 충분한 예시를 제공하고 있으니, 추가적인 예시는 제공하지 말아야한다. 제공 할 필요도 없고, 제공하려는 시도를 해서는 안된다.
                     |너가 생성한 대답은 실제 사용자에게 바로 보여줄 수 있도록 해야하며, 마크다운 문법이 들어가면 안된다.
                 """.trimIndent().trimMargin()
                 ),
-                UserMessage(infos.joinToString(", "))
+                UserMessage(infos.joinToString(","))
             )
         )
         return chatCompletion(prompt)
