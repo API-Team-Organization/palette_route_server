@@ -80,6 +80,6 @@ jobs:
             touch ./production.env
             echo '${{ secrets.ROUTE_ENVIRONMENT }}' | base64 --decode > ./production.env
 
-            docker run -v ./palette/:/palette/ --env-file production.env -d -p 8080:8080 --name route ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}
+            docker run -v ./palette/:/palette/ --env-file production.env -d -p 443:8080 --name route ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}
 
             rm ./production.env
