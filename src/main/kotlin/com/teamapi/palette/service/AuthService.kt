@@ -72,7 +72,7 @@ class AuthService(
         authManager.authenticate(UsernamePasswordAuthenticationToken(info.email, request.beforePassword))
             .awaitSingleOrNull() ?: throw CustomException(ErrorCode.INVALID_CREDENTIALS)
 
-        userRepository.create(
+        userRepository.modify(
             sessionHolder.me(userRepository)
                 .copy(password = passwordEncoder.encode(request.afterPassword))
         )
@@ -84,7 +84,7 @@ class AuthService(
         val user = sessionHolder.me(userRepository)
         verifyCodeRepository.deleteById(user.id.toString())
 
-        userRepository.create(user.copy(state = UserState.DELETED))
+        userRepository.modify(user.copy(state = UserState.DELETED))
         sessionHolder.getWebSession().invalidate().awaitSingle()
     }
 
@@ -100,12 +100,12 @@ class AuthService(
 
         if (item.code != code) throw CustomException(ErrorCode.INVALID_VERIFY_CODE)
 
-        val saved = userRepository.create(
-            userRepository.findByIdOrNull(ObjectId(item.userId))!!
-                .copy(state = UserState.ACTIVE)
-        ) // update user
+        val modified = userRepository.findByIdOrNull(ObjectId(item.userId))!!
+            .copy(state = UserState.ACTIVE)
+        if (!userRepository.modify(modified)) // update user
+            throw CustomException(ErrorCode.INTERNAL_SERVER_EXCEPTION)
 
-        val newAuthentication = createPreAuthorizedToken(saved.email)
+        val newAuthentication = createPreAuthorizedToken(modified.email)
         updateSessionWithAuthenticate(newAuthentication)
 
         return verifyCodeRepository.delete(item)

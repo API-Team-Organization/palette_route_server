@@ -115,14 +115,14 @@ class ChatService(
             }
         }
 
-        toBeResolved = qnaRepository.create(
-            toBeResolved.copy(
-                qna = toBeResolved.qna.map {
-                    if (it.id == pendingQuestion.id) it.fulfillAnswer(message)
-                    else it
-                }
-            )
+        val toChange = toBeResolved.copy(
+            qna = toBeResolved.qna.map {
+                if (it.id == pendingQuestion.id) it.fulfillAnswer(message)
+                else it
+            }
         )
+        if (qnaRepository.modify(toChange))
+            toBeResolved = toChange
 
         CoroutineScope(Dispatchers.Unconfined).async {
             val pendingQnAs = toBeResolved.qna.filter { it.answer == null }

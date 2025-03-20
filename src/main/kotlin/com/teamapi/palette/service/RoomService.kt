@@ -156,7 +156,7 @@ class RoomService(
     suspend fun updateRoomTitle(roomId: String, title: String) {
         val room = roomRepository.findByIdOrNull(ObjectId(roomId)) ?: throw CustomException(ErrorCode.ROOM_NOT_FOUND)
         room.validateUser(sessionHolder)
-        roomRepository.create(room.copy(title = title))
+        roomRepository.modify(room.copy(title = title))
     }
 
     suspend fun deleteRoom(roomId: String) {

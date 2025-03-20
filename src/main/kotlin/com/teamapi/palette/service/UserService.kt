@@ -15,7 +15,7 @@ class UserService(
 
     suspend fun update(request: UserUpdateRequest) {
         val me = sessionHolder.me(userRepository)
-        userRepository.create(
+        userRepository.modify(
             me.copy(
                 username = request.username ?: me.username,
                 birthDate = request.birthDate ?: me.birthDate
