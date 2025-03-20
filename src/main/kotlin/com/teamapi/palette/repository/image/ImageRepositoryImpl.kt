@@ -6,7 +6,9 @@ import com.teamapi.palette.repository.mongo.eq
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import org.bson.types.ObjectId
+import org.springframework.stereotype.Repository
 
+@Repository
 class ImageRepositoryImpl(database: MongoDatabase) : ImageRepository {
     private val template = database.getCollection<Image>("image")
 
