@@ -8,10 +8,7 @@ import com.teamapi.palette.entity.qna.PromptData
 import com.teamapi.palette.entity.qna.QnA
 import com.teamapi.palette.response.ErrorCode
 import com.teamapi.palette.response.exception.CustomException
-import com.teamapi.palette.service.adapter.BlobSaveAdapter
-import com.teamapi.palette.service.adapter.ChatEmitAdapter
-import com.teamapi.palette.service.adapter.GenerativeChatAdapter
-import com.teamapi.palette.service.adapter.GenerativeImageAdapter
+import com.teamapi.palette.service.adapter.*
 import com.teamapi.palette.service.adapter.comfy.GenerateRequest
 import com.teamapi.palette.service.adapter.comfy.ws.GenerateMessage
 import com.teamapi.palette.service.adapter.comfy.ws.ImageProgressMessage
@@ -32,8 +29,8 @@ class GenerativeImageService(
     private val chatEmitAdapter: ChatEmitAdapter,
     private val generativeChatAdapter: GenerativeChatAdapter,
     private val generativeImageAdapter: GenerativeImageAdapter,
-    private val blobSaveAdapter: BlobSaveAdapter,
     private val exceptionReporter: ExceptionReporter,
+    private val imageAdapter: ImageAdapter,
 ) {
     private val includesKorean = Regex("[ㄱ-ㅎ가-힣]")
     @OptIn(ExperimentalEncodingApi::class)
@@ -102,7 +99,7 @@ class GenerativeImageService(
                 }
                 .onCompletion {
                     try {
-                        val uploaded = blobSaveAdapter.save(Base64.decode(guaranteed!!))
+                        val uploaded = imageAdapter.saveImage(Base64.decode(guaranteed!!))
 
                         chatEmitAdapter.emitChat(
                             Chat(
@@ -110,7 +107,7 @@ class GenerativeImageService(
                                 roomId = room.id,
                                 userId = me,
                                 isAi = true,
-                                message = uploaded.blobUrl,
+                                message = "/images/${uploaded.id}",
                                 regenScope = true
                             )
                         )

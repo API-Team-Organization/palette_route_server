@@ -33,6 +33,8 @@ enum class ErrorCode(
     QNA_INVALID_GRID_CHOICES(HttpStatus.BAD_REQUEST, "적절하지 않은 그리드: (%s). 0~%d 선택지 중 하나가 필요합니다."),
     QNA_INVALID_GRID_DUPE(HttpStatus.BAD_REQUEST, "적절하지 않은 그리드: 중복이 없어야 합니다. possible dupes: (%s)"),
     QNA_INVALID_GRID_ABOVE_MAX(HttpStatus.BAD_REQUEST, "적절하지 않은 그리드: 너무 많은 선택지. 최대 크기는 '%d'입니다."),
+
+    IMAGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "'%s'에 해당하는 이미지를 찾을 수 없습니다."),
     ;
 
     override fun getName() = name
