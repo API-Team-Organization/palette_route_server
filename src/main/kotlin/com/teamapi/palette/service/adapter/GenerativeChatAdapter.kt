@@ -28,7 +28,7 @@ class GenerativeChatAdapter(
                 if (it.metadata != ChatGenerationMetadata.NULL && it.metadata.finishReason != null && it.metadata.finishReason != "null") {
                     println(it.metadata.finishReason)
                 }
-            }.mapNotNull { it.output.content }.joinToString("")
+            }.mapNotNull { it.output.text }.joinToString("")
         }
         .toList()
         .joinToString("")
