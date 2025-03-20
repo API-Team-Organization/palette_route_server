@@ -9,10 +9,6 @@ spring:
       repositories:
         enabled: false
       url: redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
-  r2dbc:
-    url: r2dbc:${R2DBC_DIALECT}://${R2DBC_HOST}:${R2DBC_PORT}/${DB_NAME}
-    username: ${R2DBC_USERNAME}
-    password: ${R2DBC_PASSWORD}
   ai:
     anthropic:
       api-key: ${CLAUDE_APIKEY}
